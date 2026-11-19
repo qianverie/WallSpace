@@ -21,25 +21,41 @@ const I18N = {
     genreAll: '全部题材', genreAnime: '动漫 / 二次元', genreLandscape: '风景', genrePeople: '真人 / 明星', genreAnimals: '动物',
     genreArchitecture: '城市建筑', genreSpace: '太空', genreAbstract: '抽象极简', genreLabel: '题材',
     toneAny: '全部', toneWarm: '暖', toneCool: '冷', toneGreen: '绿', toneMono: '单色', toneNeutral: '中性',
-    ratioAny: '全部', searchPlaceholder: '搜索壁纸',
-    refresh: '刷新', settings: '设置', loaded: '已加载', backToTop: '回顶部',
+    ratioAny: '全部', searchPlaceholder: '搜索壁纸', recentSearches: '最近搜索',
+    clearSearchHistory: '清空历史',
+    refresh: '刷新', settings: '设置', backToTop: '回顶部',
     sortLabel: '排序', sortDefault: '推荐', sortPopular: '热门', sortNewest: '最新',
     popularityFavorites: '收藏', popularityViews: '浏览',
-    engineOk: '引擎正常', engineBad: '引擎不可用', display: '显示器', offline: '离线',
-    images: '张图片', sourcesOnline: '个图源在线',
+    engineBad: '壁纸引擎不可用', display: '显示器', images: '张图片',
     close: '关闭', save: '收藏', savedOn: '已收藏 ◆', saveImageAs: '导出原图', sourceLink: '来源 ↗',
+    renameFavorite: '重命名', favoriteNameHint: '留空可恢复原名', cancelRename: '取消', confirmRename: '保存名称',
+    favoriteNameSaved: '收藏名称已保存', favoriteNameInvalid: '名称最多 60 字，须包含文字或数字',
+    favoriteNameMissing: '这张壁纸已取消收藏',
+    motionLibrary: '动态壁纸', motionFeatured: '精选壁纸', motionLocal: '本地视频', motionImport: '导入视频', motionSearch: '搜索精选壁纸',
+    motionSearchAction: '搜索', motionStop: '停止播放', motionEmptyLocal: '导入 MP4 或 WebM 开始预览',
+    motionEmptyFeatured: '没有匹配的精选壁纸', motionLoading: '正在读取壁纸…', motionStarting: '正在准备视频…',
+    motionPlaying: '正在播放', motionPaused: '全屏时已暂停', motionReconnecting: '等待显示器或桌面恢复',
+    motionPreviewFailed: '无法预览此视频',
     lockScreen: '锁屏', on: '开', off: '关', monitor: '显示器', allDisplays: '全部', oneDisplay: '1 台显示器',
     apply: '应用到桌面',
     modeFill: '覆盖', modeStretch: '拉伸', modeFit: '适应', modeTile: '平铺', modeCenter: '居中', modeSpan: '跨屏',
     noteFill: '覆盖 · 等比裁切填满', noteStretch: '拉伸 · 铺满不保比例', noteFit: '适应 · 等比完整显示',
     noteTile: '平铺 · 原尺寸重复', noteCenter: '居中 · 原尺寸居中', noteSpan: '跨屏 · 延伸过所有屏幕',
     nothing: '这一版没有内容', imageUnavailable: '图片不可用', bootFailed: '启动失败',
-    applying: '应用中 / 下载 → 引擎 → 回读', applied: '已应用到桌面', applyFailed: '应用失败',
+    preparingWallpaper: '正在准备壁纸', downloadingWallpaper: '正在下载原图',
+    applying: '正在应用到桌面', applied: '已应用到桌面', applyFailed: '应用失败',
     imageNetworkError: '连接原图服务器失败，请稍后重试，或打开「来源」检查原图',
+    desktopChanged: '应用前检测到壁纸设置或显示器布局变化，请核对目标屏幕后重试',
     filtersCleared: '筛选已清空', savedToast: '已收藏', removed: '已取消收藏',
     refreshing: '正在刷新图源', indexed: '张图已入索引', searchUnavailable: '部分在线图源暂不可用', usingCache: '使用缓存',
     imageSaved: '图片已保存', cancelled: '已取消', saveFailed: '保存失败', savingImage: '正在保存图片',
     oneDisplayToast: '检测到一台显示器 / 多屏已就绪',
+    saveFraming: '保存构图', resetFraming: '重置构图', framingSaved: '已保存此图构图', framingReset: '已恢复默认构图',
+    framingControls: 'Ctrl＋滚轮缩放 · 拖动移动 · 滚轮翻阅',
+    undoWallpaper: '撤销上次应用', wallpaperUndone: '已恢复上次桌面壁纸',
+    desktopProfileNote: '保存每块屏幕当前的壁纸。相同的屏幕布局重新连接时会恢复。',
+    saveDesktopProfile: '保存显示器方案', restoreDesktopProfile: '恢复显示器方案',
+    desktopProfileSaved: '已保存当前屏幕方案', desktopProfileRestored: '已恢复屏幕方案',
     lockOn: '锁屏同步已开', lockOff: '锁屏同步已关', allDisplaysToast: '全部显示器',
     noSourceLink: '没有来源链接', nothingChanged: '没有改动', credentialsSaved: '凭据已保存在本机',
     localFolderAdded: '本地文件夹已添加', cacheCleared: '缓存已清理', cacheClearFailed: '缓存清理失败',
@@ -67,25 +83,41 @@ const I18N = {
     genreAll: 'ALL THEMES', genreAnime: 'ANIME', genreLandscape: 'LANDSCAPE', genrePeople: 'REAL PEOPLE', genreAnimals: 'ANIMALS',
     genreArchitecture: 'ARCHITECTURE', genreSpace: 'SPACE', genreAbstract: 'ABSTRACT', genreLabel: 'Themes',
     toneAny: 'ANY', toneWarm: 'WARM', toneCool: 'COOL', toneGreen: 'GREEN', toneMono: 'MONO', toneNeutral: 'NEUTRAL',
-    ratioAny: 'ANY', searchPlaceholder: 'SEARCH THE COLLECTION',
-    refresh: 'REFRESH', settings: 'SETTINGS', loaded: 'LOADED', backToTop: 'BACK TO TOP',
+    ratioAny: 'ANY', searchPlaceholder: 'SEARCH THE COLLECTION', recentSearches: 'Recent searches',
+    clearSearchHistory: 'Clear history',
+    refresh: 'REFRESH', settings: 'SETTINGS', backToTop: 'BACK TO TOP',
     sortLabel: 'SORT', sortDefault: 'RECOMMENDED', sortPopular: 'POPULAR', sortNewest: 'NEWEST',
     popularityFavorites: 'SAVES', popularityViews: 'VIEWS',
-    engineOk: 'ENGINE OK', engineBad: 'ENGINE UNAVAILABLE', display: 'DISPLAY', offline: 'OFFLINE',
-    images: 'IMAGES', sourcesOnline: 'SOURCES ONLINE',
+    engineBad: 'WALLPAPER ENGINE UNAVAILABLE', display: 'DISPLAY', images: 'IMAGES',
     close: 'CLOSE', save: 'SAVE', savedOn: 'SAVED ◆', saveImageAs: 'SAVE IMAGE AS', sourceLink: 'SOURCE ↗',
+    renameFavorite: 'RENAME', favoriteNameHint: 'Leave blank to restore the original title.', cancelRename: 'Cancel', confirmRename: 'Save name',
+    favoriteNameSaved: 'FAVORITE NAME SAVED', favoriteNameInvalid: 'Use up to 60 characters with at least one letter or number.',
+    favoriteNameMissing: 'This wallpaper is no longer a favorite.',
+    motionLibrary: 'MOTION', motionFeatured: 'Featured', motionLocal: 'Local videos', motionImport: 'Import videos', motionSearch: 'Search featured wallpapers',
+    motionSearchAction: 'Search', motionStop: 'Stop playback', motionEmptyLocal: 'Import an MP4 or WebM video to preview it.',
+    motionEmptyFeatured: 'No matching featured wallpapers.', motionLoading: 'Loading wallpapers…', motionStarting: 'Preparing video…',
+    motionPlaying: 'Playing', motionPaused: 'Paused while fullscreen', motionReconnecting: 'Waiting for display or desktop',
+    motionPreviewFailed: 'This video cannot be previewed.',
     lockScreen: 'LOCK SCREEN', on: 'ON', off: 'OFF', monitor: 'MONITOR', allDisplays: 'ALL', oneDisplay: '1 DISPLAY',
     apply: 'APPLY TO DESKTOP',
     modeFill: 'FILL', modeStretch: 'STRETCH', modeFit: 'FIT', modeTile: 'TILE', modeCenter: 'CENTER', modeSpan: 'SPAN',
     noteFill: 'Fill · crop to cover, keep ratio', noteStretch: 'Stretch · fill, ignore ratio', noteFit: 'Fit · show whole image',
     noteTile: 'Tile · repeat at original size', noteCenter: 'Center · original size', noteSpan: 'Span · extend across displays',
     nothing: 'NOTHING IN THIS EDITION', imageUnavailable: 'IMAGE UNAVAILABLE', bootFailed: 'BOOT FAILED',
-    applying: 'APPLYING / DOWNLOAD → ENGINE → READ-BACK', applied: 'APPLIED TO DESKTOP', applyFailed: 'APPLY FAILED',
+    preparingWallpaper: 'PREPARING WALLPAPER', downloadingWallpaper: 'DOWNLOADING ORIGINAL',
+    applying: 'APPLYING TO DESKTOP', applied: 'APPLIED TO DESKTOP', applyFailed: 'APPLY FAILED',
     imageNetworkError: 'Could not reach the original image server. Try again or open the source page.',
+    desktopChanged: 'Wallpaper settings or the display layout changed before application. Check the target display and try again.',
     filtersCleared: 'FILTERS CLEARED', savedToast: 'SAVED', removed: 'REMOVED',
     refreshing: 'REFRESHING SOURCES', indexed: 'IMAGES INDEXED', searchUnavailable: 'SOME ONLINE SOURCES ARE UNAVAILABLE', usingCache: 'CACHED',
     imageSaved: 'IMAGE SAVED', cancelled: 'CANCELLED', saveFailed: 'SAVE FAILED', savingImage: 'SAVING IMAGE',
     oneDisplayToast: 'ONE DISPLAY DETECTED / MULTI-MONITOR READY',
+    saveFraming: 'SAVE FRAMING', resetFraming: 'RESET FRAMING', framingSaved: 'FRAMING SAVED FOR THIS IMAGE', framingReset: 'DEFAULT FRAMING RESTORED',
+    framingControls: 'Ctrl + wheel to zoom · Drag to pan · Wheel to browse',
+    undoWallpaper: 'UNDO LAST APPLY', wallpaperUndone: 'PREVIOUS DESKTOP WALLPAPER RESTORED',
+    desktopProfileNote: 'Save the wallpaper on each display. Reconnecting the same layout restores it.',
+    saveDesktopProfile: 'SAVE DISPLAY PROFILE', restoreDesktopProfile: 'RESTORE DISPLAY PROFILE',
+    desktopProfileSaved: 'DISPLAY PROFILE SAVED', desktopProfileRestored: 'DISPLAY PROFILE RESTORED',
     lockOn: 'LOCK SCREEN SYNC ON', lockOff: 'LOCK SCREEN SYNC OFF', allDisplaysToast: 'ALL DISPLAYS',
     noSourceLink: 'NO SOURCE LINK', nothingChanged: 'NOTHING CHANGED', credentialsSaved: 'CREDENTIALS SAVED LOCALLY',
     localFolderAdded: 'LOCAL FOLDER ADDED', cacheCleared: 'CACHE CLEARED', cacheClearFailed: 'CACHE CLEAR FAILED',
@@ -113,25 +145,41 @@ const I18N = {
     genreAll: 'すべてのテーマ', genreAnime: 'アニメ', genreLandscape: '風景', genrePeople: '実写・有名人', genreAnimals: '動物',
     genreArchitecture: '街・建築', genreSpace: '宇宙', genreAbstract: '抽象・ミニマル', genreLabel: 'テーマ',
     toneAny: 'すべて', toneWarm: '暖色', toneCool: '寒色', toneGreen: '緑', toneMono: 'モノクロ', toneNeutral: '中間色',
-    ratioAny: 'すべて', searchPlaceholder: '壁紙を検索',
-    refresh: '更新', settings: '設定', loaded: '読み込み済み', backToTop: '先頭へ',
+    ratioAny: 'すべて', searchPlaceholder: '壁紙を検索', recentSearches: '最近の検索',
+    clearSearchHistory: '履歴を消去',
+    refresh: '更新', settings: '設定', backToTop: '先頭へ',
     sortLabel: '並び順', sortDefault: 'おすすめ', sortPopular: '人気', sortNewest: '新着',
     popularityFavorites: '保存', popularityViews: '閲覧',
-    engineOk: 'エンジン正常', engineBad: 'エンジン利用不可', display: 'ディスプレイ', offline: 'オフライン',
-    images: '枚の画像', sourcesOnline: '個のソースがオンライン',
+    engineBad: '壁紙エンジン利用不可', display: 'ディスプレイ', images: '枚の画像',
     close: '閉じる', save: '保存', savedOn: '保存済み ◆', saveImageAs: '画像を保存', sourceLink: '出典 ↗',
+    renameFavorite: '名前を変更', favoriteNameHint: '空欄にすると元の名前に戻ります。', cancelRename: 'キャンセル', confirmRename: '名前を保存',
+    favoriteNameSaved: '名前を保存しました', favoriteNameInvalid: '文字または数字を含む60文字以内の名前を入力してください。',
+    favoriteNameMissing: 'この壁紙はお気に入りから削除されています。',
+    motionLibrary: '動く壁紙', motionFeatured: 'おすすめ壁紙', motionLocal: 'ローカル動画', motionImport: '動画を追加', motionSearch: 'おすすめ壁紙を検索',
+    motionSearchAction: '検索', motionStop: '停止', motionEmptyLocal: 'MP4 または WebM の動画を追加してください。',
+    motionEmptyFeatured: '一致する壁紙が見つかりません。', motionLoading: '壁紙を読み込み中…', motionStarting: '動画を準備中…',
+    motionPlaying: '再生中', motionPaused: '全画面表示中は一時停止', motionReconnecting: '画面またはデスクトップの復帰を待機中',
+    motionPreviewFailed: 'この動画をプレビューできません。',
     lockScreen: 'ロック画面', on: 'オン', off: 'オフ', monitor: 'モニター', allDisplays: 'すべて', oneDisplay: '1 ディスプレイ',
     apply: 'デスクトップに適用',
     modeFill: '塗りつぶし', modeStretch: '引き伸ばし', modeFit: '全体表示', modeTile: '並べて表示', modeCenter: '中央', modeSpan: '画面横断',
     noteFill: '塗りつぶし · 比率を保ち裁断', noteStretch: '引き伸ばし · 比率無視', noteFit: '全体表示 · 比率維持',
     noteTile: '並べて表示 · 元サイズ', noteCenter: '中央 · 元サイズ', noteSpan: '画面横断 · 全ディスプレイへ',
     nothing: 'この号には何もありません', imageUnavailable: '画像を読み込めません', bootFailed: '起動失敗',
-    applying: '適用中 / ダウンロード → エンジン → 検証', applied: 'デスクトップに適用しました', applyFailed: '適用失敗',
+    preparingWallpaper: '壁紙を準備しています', downloadingWallpaper: '元画像をダウンロードしています',
+    applying: 'デスクトップに適用しています', applied: 'デスクトップに適用しました', applyFailed: '適用失敗',
     imageNetworkError: '元画像のサーバーに接続できません。再試行するか出典をご確認ください。',
+    desktopChanged: '適用前に壁紙設定または画面構成が変わりました。対象の画面を確認して再試行してください。',
     filtersCleared: '絞り込みを解除', savedToast: '保存しました', removed: '解除しました',
     refreshing: 'ソースを更新中', indexed: '枚を索引化', searchUnavailable: '一部のオンラインソースに接続できません', usingCache: 'キャッシュ使用中',
     imageSaved: '画像を保存しました', cancelled: 'キャンセル', saveFailed: '保存失敗', savingImage: '画像を保存中',
     oneDisplayToast: 'ディスプレイ 1 台 / マルチ対応済み',
+    saveFraming: '構図を保存', resetFraming: '構図をリセット', framingSaved: 'この画像の構図を保存しました', framingReset: '既定の構図に戻しました',
+    framingControls: 'Ctrl＋ホイールで拡大縮小 · ドラッグで移動 · ホイールで画像切替',
+    undoWallpaper: '最後の適用を取り消す', wallpaperUndone: '以前の壁紙に戻しました',
+    desktopProfileNote: '各画面の壁紙を保存します。同じ画面構成を再接続すると復元されます。',
+    saveDesktopProfile: '画面設定を保存', restoreDesktopProfile: '画面設定を復元',
+    desktopProfileSaved: '画面設定を保存しました', desktopProfileRestored: '画面設定を復元しました',
     lockOn: 'ロック画面同期 オン', lockOff: 'ロック画面同期 オフ', allDisplaysToast: 'すべてのディスプレイ',
     noSourceLink: '出典リンクなし', nothingChanged: '変更なし', credentialsSaved: '認証情報を保存しました',
     localFolderAdded: 'ローカルフォルダを追加', cacheCleared: 'キャッシュを削除', cacheClearFailed: '削除失敗',
@@ -164,6 +212,10 @@ const MODES = [
   ['fit', 'modeFit', 'noteFit'], ['tile', 'modeTile', 'noteTile'],
   ['center', 'modeCenter', 'noteCenter'], ['span', 'modeSpan', 'noteSpan']
 ];
+const { DEFAULT_FRAMING, imagePlacement, monitorBounds, framingViewport } = window.framingGeometry;
+const FRAMING_KEY_PREFIX = 'wallscape.framing:';
+const MIN_PREVIEW_ZOOM = 0.25;
+const MAX_PREVIEW_ZOOM = 5;
 const TONES = [['any', 'toneAny'], ['warm', 'toneWarm'], ['cool', 'toneCool'], ['green', 'toneGreen'], ['mono', 'toneMono'], ['neutral', 'toneNeutral']];
 const GENRES = [['all', 'genreAll'], ['anime', 'genreAnime'], ['people', 'genrePeople'], ['landscape', 'genreLandscape'],
   ['animals', 'genreAnimals'], ['architecture', 'genreArchitecture'], ['space', 'genreSpace'], ['abstract', 'genreAbstract']];
@@ -172,23 +224,25 @@ const RATIOS = [['any', 'ratioAny'], ['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '
    Sources without real dimensions are never guessed - they only match ANY / —. */
 const RES_MIN = { hd: 720, fhd: 1080, qhd: 1440, uhd: 2160 };
 const RESOLUTIONS = [['any', 'ANY'], ['hd', 'HD'], ['fhd', 'FHD'], ['qhd', 'QHD'], ['uhd', 'UHD'], ['unknown', '—']];
-const SCOPE_KEYS = { all: 'scopeAll', saved: 'scopeSaved', history: 'scopeHistory' };
 const SOURCE_NAMES = { bing: 'BING', github: 'OPEN', anime: 'ANIME', nekos: 'NEKOS', commons: 'COMMONS', unsplash: 'UNSPLASH', pexels: 'PEXELS', wallhaven: 'WALLHAVEN', local: 'LOCAL' };
 const RECENT_SEARCHES_KEY = 'wallscape.recentSearches';
+const MAX_RECENT_SEARCHES = 10;
 const FILTER_KEYS = ['scope', 'genre', 'tone', 'ratio', 'resolution', 'sort'];
 const SORTS = ['relevance', 'popular', 'newest'];
-const BASE_W = 1600, BASE_H = 900;
-const PRESS_SEL = '.filter-word, .mode, .strip-action, .settings-action, .language-word, .mode-word, .detail-side span, #apply-bar, #btn-close, #btn-settings-close, .card, .suggestion';
+const { FRAME_WIDTH: BASE_W, FRAME_HEIGHT: BASE_H } = framingGeometry;
+const PRESS_SEL = '.filter-word, .mode, .strip-action, .settings-action, .language-word, .mode-word, #apply-bar, #btn-settings-close, .card, .suggestion';
 
 const S = {
   items: [], sources: [], settings: {}, favorites: [], history: [],
   credentials: {}, folders: [], status: null, background: null,
   scope: 'all', genre: 'all', tone: 'any', ratio: 'any', resolution: 'any', sort: 'relevance', query: '',
-  filtered: [], current: null, currentCard: null,
-  style: 'fill', monitorIndex: -1, monitorNames: [], syncLock: false, busy: false
+  filtered: [], current: null, currentCard: null, previewImage: null, framing: DEFAULT_FRAMING,
+  style: 'fill', monitorId: null, monitors: [], syncLock: false, busy: false, undoAvailable: false
 };
 
 let toastTimer = null, refreshing = false;
+let detailCloseTimer;
+let previewTurn = null;
 let suggestList = [], suggestIndex = -1, composingSearch = false;
 let onlineRequest = 0, onlineSearchKey = '', onlineItems = new Map();
 let wallhavenNextSearchPage, loadingMore = false;
@@ -199,6 +253,7 @@ const GRID_PREFETCH_SCREENS = 1.5;
 const PAGE_LOAD_INTERVAL = 2200;
 const MAX_AUTO_FAILURES = 2;
 let indexedItems = new Map(), recentSearches = loadRecentSearches();
+let favoriteById = new Map();
 const cardItems = new WeakMap();
 const cardsById = new Map();
 const io = new IntersectionObserver(entries => {
@@ -215,14 +270,15 @@ async function boot() {
   S.items = d.items || [];
   S.sources = d.sources || [];
   S.settings = d.settings || {};
-  S.favorites = d.favorites || [];
+  setFavorites(d.favorites || []);
   S.history = d.history || [];
   S.credentials = d.credentials || {};
   S.folders = d.folders || [];
   S.status = d.status || null;
-  S.style = S.settings.style || 'fill';
+  S.style = MODES.some(([value]) => value === S.settings.style) ? S.settings.style : 'fill';
   S.syncLock = Boolean(S.settings.lockScreenSync);
-  S.monitorNames = (d.status && d.status.monitors) || [];
+  S.monitors = d.status?.monitors || [];
+  S.undoAvailable = Boolean(d.undoAvailable);
   lang = ['zh', 'en', 'ja'].includes(S.settings.language) ? S.settings.language : 'zh';
 
   S.scope = S.settings.scope || 'all';
@@ -245,11 +301,11 @@ async function boot() {
   bindFeedback();
   bindWindowDrag();
   bindApiEvents();
+  api.readStatus();
   loadGenreFeed();
   queueWallhavenAutoLoad();
   layout();
   window.addEventListener('resize', layout);
-  paintCatalogCount();
 
   if (S.settings.pendingFeedback) {
     const key = S.settings.pendingFeedback;
@@ -270,9 +326,11 @@ function layout() {
   root.setProperty('--stage-y', y + 'px');
   requestAnimationFrame(() => {
     const stage = $('#stage').getBoundingClientRect();
-    const bar = $('#searchbar').getBoundingClientRect();
+    const lowerEdge = (suggestionsOpen() ? $('#search-assist') : $('#searchbar')).getBoundingClientRect().bottom;
+    const input = $('#search').getBoundingClientRect();
     const scale = s || 1;
-    root.setProperty('--grid-top', Math.ceil((bar.bottom - stage.top) / scale + 20) + 'px');
+    root.setProperty('--suggestions-left', (input.left - stage.left) / scale + 'px');
+    root.setProperty('--grid-top', Math.ceil((lowerEdge - stage.top) / scale + 20) + 'px');
     queueWallhavenAutoLoad();
   });
 }
@@ -285,16 +343,16 @@ function applyI18n() {
   $('#search').setAttribute('aria-label', t('searchPlaceholder'));
   $('#suggestions').setAttribute('aria-label', t('searchPlaceholder'));
   $('#genre-block').setAttribute('aria-label', t('genreLabel'));
-  paintCatalogCount();
+  $('#btn-save-framing').title = t('framingControls');
   paintWallhavenMore();
   document.querySelectorAll('.language-word').forEach(w =>
     w.classList.toggle('is-active', w.dataset.lang === lang));
   paintModeWords();
   buildFilters();
   buildModes();
-  paintStatus();
+  paintEngineStatus();
   paintSide();
-  if (S.current) $('#btn-fav').textContent = isFav(S.current.id) ? t('savedOn') : t('save');
+  if (S.current) paintDetailFavorite();
   render();
   if ($('#settings').classList.contains('is-open')) openSettings();
 }
@@ -325,28 +383,12 @@ function paintDate() {
   $('#edge-date').textContent = `${n.getFullYear()}.${pad(n.getMonth() + 1, 2)}.${pad(n.getDate(), 2)}`;
 }
 
-function paintStatus() {
+function paintEngineStatus() {
   const el = $('#engine-status');
-  const s = S.status;
-  if (!s) {
-    el.classList.remove('is-ok');
-    el.classList.add('is-bad');
-    el.textContent = t('checking');
-    $('#source-status').textContent = `${S.items.length} ${t('images')} / ${t('checking')}`;
-    return;
-  }
-  const ok = s && s.ok;
-  el.classList.toggle('is-ok', Boolean(ok));
-  el.classList.toggle('is-bad', !ok);
-  const st = s && s.status || {};
-  el.textContent = ok
-    ? `${t('engineOk')} / STYLE ${st.wallpaperStyle || '-'}:${st.tileWallpaper || '-'} / ${st.monitors || 1} ${t('display')}`
-    : `${t('engineBad')} / ${(s && s.error) || 'no receipt'}`;
-  const broken = S.sources.filter(x => !x.ok && !x.stale).map(x => SOURCE_NAMES[x.id] || x.id);
-  const online = S.sources.filter(x => x.configured && x.ok && !x.loading && x.id !== 'local').length;
-  $('#source-status').textContent = broken.length
-    ? `${t('offline')} ${broken.join(' · ')}`
-    : `${S.items.length} ${t('images')} / ${online} ${t('sourcesOnline')}`;
+  const unavailable = S.status?.ok === false;
+  el.textContent = unavailable ? t('engineBad') : '';
+  el.title = unavailable ? S.status.error || '' : '';
+  el.hidden = !unavailable;
 }
 
 function setPaper(url) {
@@ -379,7 +421,7 @@ function bindFeedback() {
   }, true);
   document.addEventListener('dragstart', e => e.preventDefault());
   document.addEventListener('selectstart', e => {
-    if (!e.target.closest('#search')) e.preventDefault();
+    if (!e.target.closest('#search, #favorite-name, #motion-search')) e.preventDefault();
   });
 }
 
@@ -411,25 +453,40 @@ function indexCatalog() {
 function loadRecentSearches() {
   try {
     const list = JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY));
-    return Array.isArray(list) ? list.filter(term => typeof term === 'string' && term.length <= 120).slice(0, 6) : [];
+    return Array.isArray(list) ? list.filter(term => typeof term === 'string' && term.trim() && term.length <= 120)
+      .slice(0, MAX_RECENT_SEARCHES) : [];
   } catch { return []; }
+}
+
+function saveRecentSearches(list) {
+  recentSearches = list;
+  try { localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(list)); } catch {}
 }
 
 function rememberSearch(term) {
   const query = wallpaperSearch.normalize(term);
   if (!query) return;
-  recentSearches = [term, ...recentSearches.filter(entry => wallpaperSearch.normalize(entry) !== query)].slice(0, 6);
-  try { localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recentSearches)); } catch {}
+  saveRecentSearches([term, ...recentSearches.filter(entry => wallpaperSearch.normalize(entry) !== query)]
+    .slice(0, MAX_RECENT_SEARCHES));
+}
+
+function clearRecentSearches() {
+  saveRecentSearches([]);
+  closeSuggestions();
 }
 
 function closeSuggestions() {
   const box = $('#suggestions');
+  const wasOpen = box.classList.contains('is-on');
   box.classList.remove('is-on');
   box.replaceChildren();
   $('#search').setAttribute('aria-expanded', 'false');
   $('#search').removeAttribute('aria-activedescendant');
+  $('#search').removeAttribute('aria-keyshortcuts');
+  $('#btn-clear-search-history').hidden = true;
   suggestList = [];
   suggestIndex = -1;
+  if (wasOpen) layout();
 }
 
 function acceptSuggestion(word) {
@@ -456,23 +513,41 @@ function updateSuggestions() {
   const input = $('#search');
   const box = $('#suggestions');
   if (composingSearch || document.activeElement !== input) return;
-  suggestList = wallpaperSearch.suggest(scopedItems(), input.value, recentSearches);
+  const history = !wallpaperSearch.normalize(input.value);
+  suggestList = history ? recentSearches : wallpaperSearch.suggest(scopedItems(), input.value, [], 6, customName);
   suggestIndex = -1;
   box.replaceChildren();
   if (!suggestList.length) { closeSuggestions(); return; }
+  box.setAttribute('aria-label', t(history ? 'recentSearches' : 'searchPlaceholder'));
+  $('#btn-clear-search-history').hidden = !history;
+  if (history) input.setAttribute('aria-keyshortcuts', 'Control+Delete');
+  else input.removeAttribute('aria-keyshortcuts');
+  if (history) {
+    const heading = document.createElement('div');
+    heading.className = 'suggestion-heading';
+    heading.setAttribute('aria-hidden', 'true');
+    heading.textContent = t('recentSearches');
+    box.appendChild(heading);
+  }
+  const options = document.createElement('div');
+  options.className = 'suggestion-items';
+  options.setAttribute('role', 'presentation');
   suggestList.forEach((word, index) => {
     const el = document.createElement('div');
     el.id = `suggestion-${index}`;
     el.className = 'suggestion';
     el.setAttribute('role', 'option');
     el.textContent = word;
+    el.title = word;
     el.addEventListener('mousedown', event => event.preventDefault());
     el.addEventListener('click', () => acceptSuggestion(word));
-    box.appendChild(el);
+    options.appendChild(el);
   });
+  box.appendChild(options);
   paintSuggestionActive();
   box.classList.add('is-on');
   input.setAttribute('aria-expanded', 'true');
+  layout();
 }
 
 function suggestionsOpen() {
@@ -514,8 +589,6 @@ function buildFilters() {
       block.appendChild(b);
     }
   }
-  const genreLabel = t(GENRES.find(([id]) => id === S.genre)?.[1] || 'genreAll');
-  $('#mast-genre').textContent = `${genreLabel} / ${t(SCOPE_KEYS[S.scope] || 'scopeAll')}`;
   layout();
 }
 
@@ -531,7 +604,35 @@ function clearFilters() {
   toast(t('filtersCleared'));
 }
 
-function isFav(id) { return S.favorites.some(f => f.id === id); }
+function setFavorites(favorites) {
+  S.favorites = favorites;
+  favoriteById = new Map(favorites.map(item => [item.id, item]));
+}
+
+function isFav(id) { return favoriteById.has(id); }
+function customName(item) { return favoriteById.get(item.id)?.customName || ''; }
+
+function paintItemTitle(element, item) {
+  const name = customName(item);
+  element.textContent = name || item.title;
+  element.classList.toggle('has-custom-name', Boolean(name));
+  element.title = name;
+}
+
+function paintDetailFavorite() {
+  const favorited = isFav(S.current.id);
+  $('#btn-fav').textContent = t(favorited ? 'savedOn' : 'save');
+  $('#btn-rename-favorite').hidden = !favorited;
+  paintItemTitle($('#detail-title'), S.current);
+}
+
+function updateFavorites(favorites, id) {
+  setFavorites(favorites);
+  const card = cardsById.get(id);
+  if (card) updateCard(card, cardItems.get(card));
+  if (S.current?.id === id) paintDetailFavorite();
+  if (S.scope === 'saved' || S.query.trim()) renderSearch(false, true);
+}
 
 function matchesFilters(item) {
   if (!wallpaperSearch.matchesGenre(item, S.genre)) return false;
@@ -556,13 +657,15 @@ function scopedItems(includeOnline = false) {
     : includeOnline && onlineItems.size
       ? S.items.map(item => onlineItems.get(item.id) || item).concat([...onlineItems.values()].filter(item => !indexedItems.has(item.id)))
       : S.items;
-  return items.filter(matchesFilters);
+  const named = !archive && S.query.trim() ? S.favorites.filter(item => item.customName &&
+    !indexedItems.has(item.id) && !(includeOnline && onlineItems.has(item.id))) : [];
+  return items.concat(named).filter(matchesFilters);
 }
 
 function applyFilters() {
   const words = wallpaperSearch.terms(S.query);
   S.filtered = scopedItems(true).filter(item => !words.length || (S.scope === 'all' && onlineItems.has(item.id)) ||
-    wallpaperSearch.matches(wallpaperSearch.index(item), words));
+    wallpaperSearch.matches(wallpaperSearch.indexWithName(item, customName(item)), words));
   if (S.sort === 'popular') S.filtered.sort(wallpaperSearch.comparePopularity);
   else if (S.sort === 'newest') S.filtered.sort(wallpaperSearch.compareDate);
   else if (S.scope === 'all' && S.genre !== 'all') {
@@ -592,10 +695,6 @@ function paintSearchCount() {
   paintWallhavenMore();
   paintBackToTop();
   queueWallhavenAutoLoad();
-}
-
-function paintCatalogCount() {
-  $('#mast-count').textContent = `${t('loaded')} ${pad(S.items.length)}`;
 }
 
 function paintBackToTop() {
@@ -664,7 +763,7 @@ function updateCard(card, item) {
   const previous = cardItems.get(card);
   cardItems.set(card, item);
   card.classList.toggle('is-fav', isFav(item.id));
-  card.querySelector('.card-title').textContent = item.title;
+  paintItemTitle(card.querySelector('.card-title'), item);
   card.querySelector('.card-fallback').textContent = t('imageUnavailable');
   if (previous && thumbOf(previous) !== thumbOf(item)) {
     const image = card.querySelector('img');
@@ -728,18 +827,196 @@ function buildModes() {
   const box = $('#mode-scale');
   box.innerHTML = '';
   for (const [value, labelKey, noteKey] of MODES) {
-    const el = document.createElement('div');
+    const el = document.createElement('button');
+    el.type = 'button';
     el.className = 'mode' + (S.style === value ? ' is-active' : '');
+    el.setAttribute('aria-pressed', String(S.style === value));
     el.dataset.value = value;
     el.textContent = t(labelKey);
     el.addEventListener('click', () => {
       S.style = value;
-      for (const m of box.children) m.classList.toggle('is-active', m.dataset.value === value);
+      for (const m of box.children) {
+        const active = m.dataset.value === value;
+        m.classList.toggle('is-active', active);
+        m.setAttribute('aria-pressed', String(active));
+      }
+      paintPreview();
+      paintSide();
+      if (value === 'span') api.readStatus(true);
       toast(t(noteKey));
       api.setSettings({ style: value });
     });
     box.appendChild(el);
   }
+}
+
+function previewMonitors() {
+  return S.monitors.filter(m => m.active && m.width > 0 && m.height > 0);
+}
+
+function previewMonitorId() {
+  return S.style === 'span' ? null : S.monitorId;
+}
+
+function readFraming(id) {
+  try {
+    const framing = JSON.parse(localStorage.getItem(FRAMING_KEY_PREFIX + id));
+    if (framing && framing.zoom >= MIN_PREVIEW_ZOOM && framing.zoom <= MAX_PREVIEW_ZOOM &&
+        [framing.zoom, framing.x, framing.y].every(Number.isFinite)) return framing;
+  } catch (e) { /* invalid or unavailable local storage */ }
+  return DEFAULT_FRAMING;
+}
+
+function saveFraming(reset = false) {
+  if (!S.current || !S.previewImage?.url) return;
+  const key = FRAMING_KEY_PREFIX + S.current.id;
+  const { zoom, x, y } = S.framing;
+  try {
+    if (reset || (zoom === 1 && x === 0 && y === 0)) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(S.framing));
+  } catch (e) {
+    toast(t('saveFailed'));
+    return;
+  }
+  if (reset) {
+    S.framing = DEFAULT_FRAMING;
+    paintFraming();
+  }
+  toast(t(reset ? 'framingReset' : 'framingSaved'));
+}
+
+function paintFraming() {
+  const preview = $('#detail-preview');
+  const { zoom, x, y } = S.framing;
+  preview.style.setProperty('--preview-zoom', zoom);
+  preview.style.setProperty('--preview-x', `${(x + (1 - zoom) / 2) * preview.clientWidth}px`);
+  preview.style.setProperty('--preview-y', `${(y + (1 - zoom) / 2) * preview.clientHeight}px`);
+}
+
+function clearPreviewTurn() {
+  if (!previewTurn) return;
+  previewTurn.enter?.cancel();
+  previewTurn.exit?.cancel();
+  previewTurn.previous.remove();
+  previewTurn = null;
+}
+
+function preparePreviewTurn(direction) {
+  const current = $('#detail-preview');
+  const visible = current.childElementCount ? current : previewTurn?.previous;
+  const previous = visible?.cloneNode(true);
+  clearPreviewTurn();
+  if (!previous) return;
+  previous.removeAttribute('id');
+  previous.style.transition = 'none';
+  previous.style.transform = 'none';
+  previous.classList.add('is-outgoing');
+  current.before(previous);
+  previewTurn = { previous, direction };
+}
+
+function playPreviewTurn(current) {
+  const turn = previewTurn;
+  if (!turn || turn.enter) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    clearPreviewTurn();
+    return;
+  }
+
+  const distance = 12 * turn.direction;
+  const timing = { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' };
+  turn.exit = turn.previous.animate([
+    { transform: 'translateY(0)', opacity: 1 },
+    { transform: `translateY(${-distance}%)`, opacity: 0 }
+  ], timing);
+  turn.enter = current.animate([
+    { transform: `translateY(${distance}%)`, opacity: 0 },
+    { transform: 'translateY(0)', opacity: 1 }
+  ], timing);
+  turn.enter.onfinish = () => {
+    if (previewTurn === turn) clearPreviewTurn();
+  };
+}
+
+function paintPreview() {
+  const image = S.previewImage;
+  const preview = $('#detail-preview');
+  if (!image?.url || !preview.clientWidth || !preview.clientHeight) return;
+
+  const monitors = previewMonitors();
+  const fallback = {
+    x: 0, y: 0, width: screen.width * devicePixelRatio, height: screen.height * devicePixelRatio
+  };
+  const primary = monitors.find(m => m.x === 0 && m.y === 0) || monitors[0] || fallback;
+  const id = previewMonitorId();
+  const span = S.style === 'span';
+  const tile = S.style === 'tile';
+  const targets = span && monitors.length
+    ? monitors
+    : [monitors.find(m => m.id === id) || primary];
+  const bounds = monitorBounds(targets);
+  const viewport = framingViewport(bounds, preview.clientWidth, preview.clientHeight);
+  const { scale } = viewport;
+  const placement = imagePlacement(image, bounds, S.style, DEFAULT_FRAMING);
+  const imageWidth = placement.width * scale;
+  const imageHeight = placement.height * scale;
+  const imageX = (placement.x - viewport.x) * scale;
+  const imageY = (placement.y - viewport.y) * scale;
+  const backgroundImage = `url(${JSON.stringify(image.url)})`;
+  paintFraming();
+  preview.classList.toggle('is-multi', targets.length > 1);
+  preview.replaceChildren(...targets.map(m => {
+    const layer = document.createElement('div');
+    const x = (m.x - viewport.x) * scale;
+    const y = (m.y - viewport.y) * scale;
+    layer.className = 'preview-monitor';
+    Object.assign(layer.style, {
+      left: `${x}px`, top: `${y}px`,
+      width: `${m.width * scale}px`, height: `${m.height * scale}px`,
+      backgroundImage
+    });
+    layer.style.setProperty('--monitor-x', `${x}px`);
+    layer.style.setProperty('--monitor-y', `${y}px`);
+    layer.style.setProperty('--image-width', `${imageWidth}px`);
+    layer.style.setProperty('--image-height', `${imageHeight}px`);
+    layer.style.setProperty('--image-x', `${imageX}px`);
+    layer.style.setProperty('--image-y', `${imageY}px`);
+    if (tile) layer.style.backgroundRepeat = 'repeat';
+    return layer;
+  }));
+  playPreviewTurn(preview);
+}
+
+function loadPreviewImage(item) {
+  const preview = S.previewImage = {};
+  $('#detail-preview').replaceChildren();
+  const thumbUrl = thumbOf(item);
+  const fullUrl = item.fullUrl;
+  const hasThumbnail = Boolean(thumbUrl && thumbUrl !== fullUrl);
+  let pending = Number(hasThumbnail) + Number(Boolean(fullUrl));
+  if (!pending) clearPreviewTurn();
+  function load(url, original) {
+    if (!url) return;
+    const img = new Image();
+    img.onload = () => {
+      if (S.previewImage !== preview || preview.original) return;
+      const knownSize = !item.sizeFromThumb && item.width > 0 && item.height > 0;
+      Object.assign(preview, {
+        url: img.src, original,
+        width: !original && knownSize ? item.width : img.naturalWidth,
+        height: !original && knownSize ? item.height : img.naturalHeight
+      });
+      paintPreview();
+    };
+    img.onerror = () => {
+      pending--;
+      if (!pending && S.previewImage === preview && !preview.url) clearPreviewTurn();
+    };
+    img.src = url;
+  }
+  if (hasThumbnail) load(thumbUrl, false);
+  load(fullUrl, true);
+  return preview;
 }
 
 function sizeLabel(item) {
@@ -754,41 +1031,49 @@ function detailMetadata(item) {
   return [(item.tags || []).slice(0, 8).join(' · '), sizeLabel(item), ...counts].filter(Boolean).join('  /  ');
 }
 
-function openDetail(item, card) {
+function openDetail(item, card, direction = 0) {
+  clearTimeout(detailCloseTimer);
+  if (direction) preparePreviewTurn(direction);
+  else clearPreviewTurn();
   $('#search').blur();
   S.current = item; S.currentCard = card;
+  S.framing = readFraming(item.id);
   const d = $('#detail');
   $('#detail-source').textContent = `${item.sourceLabel || SOURCE_NAMES[item.source] || ''} / ${item.license || ''}`;
-  $('#detail-title').textContent = item.title;
   $('#detail-author').textContent = item.author || 'UNKNOWN';
   $('#detail-tags').textContent = detailMetadata(item);
   const idx = S.filtered.findIndex(x => x.id === item.id) + 1;
   $('#detail-index').textContent = `${pad(idx)} / ${pad(S.filtered.length)}`;
-  $('#btn-fav').textContent = isFav(item.id) ? t('savedOn') : t('save');
+  paintDetailFavorite();
   $('#receipt').textContent = '';
   paintSide();
   toast(`${t('opened')} · ${pad(idx)} / ${pad(S.filtered.length)}`);
 
-  const img = $('#detail-img');
-  img.style.transition = 'none'; img.src = thumbOf(item);
-  const hi = new Image();
-  hi.onload = () => { if (S.current === item) img.src = item.fullUrl; };
-  hi.src = item.fullUrl;
+  const img = $('#detail-preview');
+  img.style.transition = 'none';
+  const preview = loadPreviewImage(item);
 
   d.classList.remove('is-closing'); d.classList.add('is-open');
   d.setAttribute('aria-hidden', 'false');
+  if (!direction) api.readStatus();
+  if (direction) {
+    img.style.transform = 'none';
+    return;
+  }
   const src = card ? card.querySelector('img') : null;
   const target = $('#detail-visual').getBoundingClientRect();
   if (src && src.complete && src.naturalWidth) {
     const r = src.getBoundingClientRect();
     img.style.transform = `translate(${r.left - target.left}px, ${r.top - target.top}px) scale(${r.width / target.width}, ${r.height / target.height})`;
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (S.previewImage !== preview) return;
       img.style.transition = 'transform 680ms cubic-bezier(.76,0,.24,1)';
       img.style.transform = 'translate(0,0) scale(1,1)';
     }));
   } else {
     img.style.transform = 'scale(1.08)';
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (S.previewImage !== preview) return;
       img.style.transition = 'transform 900ms cubic-bezier(.22,1,.36,1)';
       img.style.transform = 'scale(1)';
     }));
@@ -797,9 +1082,10 @@ function openDetail(item, card) {
 
 function closeDetail() {
   const d = $('#detail');
-  if (!d.classList.contains('is-open')) return;
-  const img = $('#detail-img'); const card = S.currentCard;
-  if (card && img.complete) {
+  if (!d.classList.contains('is-open') || d.classList.contains('is-closing')) return;
+  clearPreviewTurn();
+  const img = $('#detail-preview'); const card = S.currentCard;
+  if (card && S.previewImage?.url) {
     const src = card.querySelector('img'); const tRect = $('#detail-visual').getBoundingClientRect();
     if (src && src.naturalWidth) {
       const r = src.getBoundingClientRect();
@@ -807,11 +1093,13 @@ function closeDetail() {
       img.style.transform = `translate(${r.left - tRect.left}px, ${r.top - tRect.top}px) scale(${r.width / tRect.width}, ${r.height / tRect.height})`;
     }
   }
+  S.previewImage = null;
   toast(t('closed'));
   d.classList.add('is-closing');
-  setTimeout(() => {
+  detailCloseTimer = setTimeout(() => {
     d.classList.remove('is-open', 'is-closing');
     d.setAttribute('aria-hidden', 'true'); S.current = null;
+    img.replaceChildren();
     queueWallhavenAutoLoad();
   }, 460);
 }
@@ -819,22 +1107,91 @@ function closeDetail() {
 function paintSide() {
   const lock = $('#btn-lock');
   lock.textContent = `${t('lockScreen')} / ${S.syncLock ? t('on') : t('off')}`;
-  lock.classList.toggle('is-on', S.syncLock);
-  const count = S.monitorNames.length || 1;
+  const count = previewMonitors().length;
+  const selected = previewMonitors().find(m => m.id === previewMonitorId());
   const m = $('#btn-monitor');
   m.textContent = count < 2 ? `${t('monitor')} / ${t('oneDisplay')}`
-    : `${t('monitor')} / ${S.monitorIndex < 0 ? t('allDisplays') : pad(S.monitorIndex + 1, 2)}`;
+    : `${t('monitor')} / ${selected ? pad(selected.index + 1, 2) : t('allDisplays')}`;
+  $('#btn-undo-wallpaper').hidden = !S.undoAvailable;
 }
 
 function stepDetail(dir) {
-  if (!S.current || !S.filtered.length) return;
+  if (!S.current || S.filtered.length < 2 || $('#detail').classList.contains('is-closing')) return;
   const i = S.filtered.findIndex(x => x.id === S.current.id);
-  const n = (i + dir + S.filtered.length) % S.filtered.length;
-  toast(`${dir > 0 ? t('nextItem') : t('prevItem')} · ${pad(n + 1)} / ${pad(S.filtered.length)}`);
+  const n = i < 0 ? (dir > 0 ? 0 : S.filtered.length - 1) : (i + dir + S.filtered.length) % S.filtered.length;
   const next = S.filtered[n];
   const card = document.querySelector(`.card[data-id="${CSS.escape(next.id)}"]`);
-  closeDetail();
-  setTimeout(() => openDetail(next, card || document.querySelector('.card')), 470);
+  openDetail(next, card, dir);
+  toast(`${dir > 0 ? t('nextItem') : t('prevItem')} · ${pad(n + 1)} / ${pad(S.filtered.length)}`);
+}
+
+function bindPreviewControls() {
+  const detail = $('#detail');
+  const visual = $('#detail-visual');
+  let drag = null, didPan = false;
+  let lastWheelAt = -Infinity, wheelTravel = 0, wheelStepped = false;
+
+  visual.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !e.isPrimary) return;
+    didPan = false;
+    if (!S.previewImage?.url) return;
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, framing: S.framing };
+    visual.setPointerCapture(e.pointerId);
+  });
+  visual.addEventListener('pointermove', e => {
+    if (drag?.id !== e.pointerId || !S.previewImage?.url) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!didPan && Math.hypot(dx, dy) < 4) return;
+    const rect = visual.getBoundingClientRect();
+    didPan = true;
+    visual.classList.add('is-panning');
+    S.framing = {
+      zoom: drag.framing.zoom,
+      x: drag.framing.x + dx / rect.width,
+      y: drag.framing.y + dy / rect.height
+    };
+    paintFraming();
+  });
+  visual.addEventListener('lostpointercapture', () => {
+    drag = null;
+    visual.classList.remove('is-panning');
+  });
+  visual.addEventListener('click', () => {
+    if (!didPan) closeDetail();
+  });
+
+  detail.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (drag || !S.current || detail.classList.contains('is-closing')) return;
+    const rect = visual.getBoundingClientRect();
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? rect.height : 1;
+    const delta = e.deltaY * unit;
+    if (!delta) return;
+    if (e.ctrlKey) {
+      if (!S.previewImage?.url) return;
+      const { zoom, x, y } = S.framing;
+      const next = Math.max(MIN_PREVIEW_ZOOM, Math.min(MAX_PREVIEW_ZOOM, zoom * Math.exp(-0.0017 * delta)));
+      const ratio = next / zoom;
+      const cursorX = (e.clientX - rect.left) / rect.width - 0.5;
+      const cursorY = (e.clientY - rect.top) / rect.height - 0.5;
+      S.framing = { zoom: next, x: x * ratio + cursorX * (1 - ratio), y: y * ratio + cursorY * (1 - ratio) };
+      paintFraming();
+      return;
+    }
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    if (e.timeStamp - lastWheelAt > 180) {
+      wheelTravel = 0;
+      wheelStepped = false;
+    }
+    lastWheelAt = e.timeStamp;
+    if (wheelStepped) return;
+    wheelTravel += delta;
+    if (Math.abs(wheelTravel) < 24) return;
+    wheelStepped = true;
+    stepDetail(Math.sign(wheelTravel));
+  }, { passive: false });
+  $('#btn-save-framing').addEventListener('click', () => saveFraming());
+  $('#btn-reset-framing').addEventListener('click', () => saveFraming(true));
 }
 
 /* ---------------- apply / export / mode ---------------- */
@@ -842,30 +1199,47 @@ async function applyCurrent() {
   if (!S.current || S.busy) return;
   S.busy = true;
   $('#apply-bar').classList.add('is-busy');
-  $('#receipt').textContent = t('applying');
+  $('#receipt').textContent = t('preparingWallpaper');
   let r;
-  try { r = await api.apply({ item: S.current, style: S.style, monitorIndex: S.monitorIndex, syncLock: S.syncLock }); }
+  try {
+    const topology = previewMonitors().map(({ id, x, y, width, height }) => ({ id, x, y, width, height }));
+    r = await api.apply({
+      item: S.current, style: S.style, monitorId: previewMonitorId(),
+      topology: topology.length ? topology : null, syncLock: S.syncLock, framing: S.framing
+    });
+  }
   catch (e) { r = { ok: false, error: String(e.message || e) }; }
   S.busy = false;
   $('#apply-bar').classList.remove('is-busy');
   if (!r.ok) {
     const receipt = $('#receipt');
     receipt.title = r.error || '';
-    receipt.textContent = r.code === 'IMAGE_NETWORK' ? t('imageNetworkError')
-      : `${t('failedLabel')} / ${r.stage || 'engine'} / ${r.error || 'unknown'}`;
+    const messageKey = { IMAGE_NETWORK: 'imageNetworkError', DESKTOP_CHANGED: 'desktopChanged' }[r.code];
+    if (r.code === 'DESKTOP_CHANGED') api.readStatus(true);
+    receipt.textContent = messageKey ? t(messageKey) : `${t('failedLabel')} / ${r.stage || 'engine'} / ${r.error || 'unknown'}`;
     toast(t('applyFailed')); return;
   }
-  const a = (r.receipt && r.receipt.applied) || {};
-  const v = (r.verification && r.verification.status) || {};
-  const pm = r.receipt && r.receipt.perMonitor;
   $('#receipt').title = '';
   $('#receipt').textContent =
-    `${t('okLabel')} / ${r.style.toUpperCase()} / STYLE ${a.wallpaperStyle}:${a.tileWallpaper} / ` +
-    `${t('display')} ${v.monitors || 1} / ${v.transcoded ? v.transcoded.bytes + 'B' : 'N/A'}` +
-    (pm ? ` / ${pm.method} ${pm.ok ? 'OK' : 'FAILED'}` : '') +
-    (r.lock ? ` / LOCK ${r.lock.ok ? 'OK' : 'FAILED'}` : '') +
-    (r.attempts > 1 ? ` / RETRY ${r.attempts}` : '');
+    `${t('okLabel')} / ${r.style.toUpperCase()} / ${t('display')} ${r.targetCount}` +
+    (r.lock ? ` / LOCK ${r.lock.ok ? 'OK' : 'FAILED'}` : '');
   toast(t('applied'));
+}
+
+async function desktopAction(action, success, selector) {
+  if (S.busy) return;
+  S.busy = true;
+  const output = $(selector);
+  output.textContent = t('checking');
+  let result;
+  try { result = await action(); }
+  catch (error) { result = { ok: false, error: error.message }; }
+  S.busy = false;
+  if (typeof result.undoAvailable === 'boolean') S.undoAvailable = result.undoAvailable;
+  paintSide();
+  const message = result.ok ? t(success) : `${t('failedLabel')} / ${result.error}`;
+  output.textContent = message;
+  toast(result.ok ? message : t('failedLabel'));
 }
 async function saveImageAs() {
   if (!S.current) return;
@@ -956,8 +1330,6 @@ function updateCatalog(data, append = false) {
   });
   S.sources = data.sources || [];
   indexCatalog();
-  paintCatalogCount();
-  paintStatus();
   renderSearch(append || $('#grid').scrollTop > 0, true);
   if (suggestionsOpen()) updateSuggestions();
 }
@@ -1118,7 +1490,10 @@ async function submitSearch(userSubmitted = true, force = false) {
   const genre = S.genre;
   closeSuggestions();
   rememberSearch(query);
-  if (!wallpaperSearch.normalize(query) || S.scope !== 'all' ||
+  const words = wallpaperSearch.terms(query);
+  const namedMatch = words.length && S.favorites.some(item => item.customName &&
+    wallpaperSearch.matches({ text: wallpaperSearch.normalize(item.customName) }, words));
+  if (!words.length || namedMatch || S.scope !== 'all' ||
       !S.sources.some(entry => entry.configured && entry.searchable)) {
     toast(`${pad(S.filtered.length)} ${t('images')}`);
     return;
@@ -1145,15 +1520,50 @@ async function submitSearch(userSubmitted = true, force = false) {
     toast(`${pad(S.filtered.length)} ${t('images')}${result.failed.length ? ` / ${t('searchUnavailable')}` : ''}`);
   }
 }
-function toggleFav() {
+async function toggleFav() {
   if (!S.current) return;
-  Promise.resolve(api.toggleFavorite(S.current)).then(res => {
-    S.favorites = res.favorites;
-    $('#btn-fav').textContent = res.favorited ? t('savedOn') : t('save');
-    if (S.currentCard) S.currentCard.classList.toggle('is-fav', res.favorited);
-    if (S.scope === 'saved') { applyFilters(); render(); }
+  const item = S.current;
+  try {
+    const res = await api.toggleFavorite(item);
+    updateFavorites(res.favorites, item.id);
     toast(res.favorited ? t('savedToast') : t('removed'));
-  });
+  } catch { toast(t('saveFailed')); }
+}
+
+function openFavoriteNameDialog() {
+  if (!S.current || !isFav(S.current.id)) return;
+  const dialog = $('#favorite-name-dialog');
+  if (dialog.open) return;
+  const input = $('#favorite-name');
+  dialog.dataset.id = S.current.id;
+  input.value = customName(S.current) || S.current.title || '';
+  $('#favorite-name-error').hidden = true;
+  dialog.showModal();
+  input.select();
+}
+
+async function saveFavoriteName(event) {
+  event.preventDefault();
+  const dialog = $('#favorite-name-dialog');
+  const save = $('#favorite-name-save');
+  const cancel = $('#favorite-name-cancel');
+  if (save.disabled) return;
+  save.disabled = cancel.disabled = true;
+  const id = dialog.dataset.id;
+  let result;
+  try { result = await api.renameFavorite(id, $('#favorite-name').value); }
+  catch { result = { ok: false }; }
+  finally { save.disabled = cancel.disabled = false; }
+  if (!result.ok) {
+    const key = { INVALID_NAME: 'favoriteNameInvalid', NOT_FAVORITE: 'favoriteNameMissing' }[result.code];
+    const error = $('#favorite-name-error');
+    error.textContent = t(key || 'saveFailed');
+    error.hidden = false;
+    return;
+  }
+  updateFavorites(result.favorites, id);
+  dialog.close();
+  toast(t('favoriteNameSaved'));
 }
 
 function paintSort() {
@@ -1184,7 +1594,11 @@ function bind() {
   search.addEventListener('compositionend', () => { composingSearch = false; syncSearchInput(); });
   search.addEventListener('input', event => { if (!composingSearch && !event.isComposing) syncSearchInput(); });
   search.addEventListener('focus', updateSuggestions);
+  search.addEventListener('click', () => { if (!suggestionsOpen()) updateSuggestions(); });
   search.addEventListener('blur', closeSuggestions);
+  const clearHistory = $('#btn-clear-search-history');
+  clearHistory.addEventListener('mousedown', event => event.preventDefault());
+  clearHistory.addEventListener('click', clearRecentSearches);
   $('#btn-refresh').addEventListener('click', refresh);
   $('#btn-wallhaven-more').addEventListener('click', () => loadMoreWallhaven());
   $('#btn-back-to-top').addEventListener('click', backToTop);
@@ -1195,9 +1609,19 @@ function bind() {
   $('#btn-settings').addEventListener('click', openSettings);
   $('#btn-settings-close').addEventListener('click', closeSettings);
   $('#btn-close').addEventListener('click', closeDetail);
-  $('#detail-visual').addEventListener('click', e => { if (e.target === $('#detail-img')) closeDetail(); });
+  bindPreviewControls();
+  new ResizeObserver(paintPreview).observe($('#detail-preview'));
   $('#apply-bar').addEventListener('click', applyCurrent);
+  $('#btn-undo-wallpaper').addEventListener('click', () => desktopAction(api.undoWallpaper, 'wallpaperUndone', '#receipt'));
+  $('#btn-save-desktop-profile').addEventListener('click', () => desktopAction(api.saveDesktopProfile, 'desktopProfileSaved', '#desktop-profile-status'));
+  $('#btn-restore-desktop-profile').addEventListener('click', () => desktopAction(api.restoreDesktopProfile, 'desktopProfileRestored', '#desktop-profile-status'));
   $('#btn-fav').addEventListener('click', toggleFav);
+  $('#btn-rename-favorite').addEventListener('click', openFavoriteNameDialog);
+  $('#favorite-name-form').addEventListener('submit', saveFavoriteName);
+  $('#favorite-name-cancel').addEventListener('click', () => $('#favorite-name-dialog').close());
+  $('#favorite-name-dialog').addEventListener('cancel', event => {
+    if ($('#favorite-name-save').disabled) event.preventDefault();
+  });
   $('#btn-save').addEventListener('click', saveImageAs);
   $('#btn-source').addEventListener('click', () => {
     if (S.current && S.current.pageUrl) api.openExternal(S.current.pageUrl);
@@ -1209,10 +1633,13 @@ function bind() {
     paintSide(); toast(S.syncLock ? t('lockOn') : t('lockOff'));
   });
   $('#btn-monitor').addEventListener('click', () => {
-    const count = S.monitorNames.length || 1;
-    if (count < 2) { toast(t('oneDisplayToast')); return; }
-    S.monitorIndex = S.monitorIndex + 1 >= count ? -1 : S.monitorIndex + 1;
-    paintSide(); toast(S.monitorIndex < 0 ? t('allDisplaysToast') : `${t('display')} ${pad(S.monitorIndex + 1, 2)}`);
+    const monitors = previewMonitors();
+    if (monitors.length < 2) { toast(t('oneDisplayToast')); return; }
+    if (S.style === 'span') { toast(t('noteSpan')); return; }
+    const next = monitors[monitors.findIndex(m => m.id === S.monitorId) + 1];
+    S.monitorId = next?.id || null;
+    paintPreview();
+    paintSide(); toast(next ? `${t('display')} ${pad(next.index + 1, 2)}` : t('allDisplaysToast'));
   });
   $('#btn-save-cred').addEventListener('click', async () => {
     const patch = {};
@@ -1260,7 +1687,8 @@ function bind() {
     }));
 
   document.addEventListener('keydown', e => {
-    if (composingSearch || e.isComposing || e.keyCode === 229) return;
+    if ($('#motion-library').classList.contains('is-open') || $('#favorite-name-dialog').open ||
+        composingSearch || e.isComposing || e.keyCode === 229) return;
     const detailOpen = $('#detail').classList.contains('is-open');
     const settingsOpen = $('#settings').classList.contains('is-open');
     if (e.key === 'Escape') {
@@ -1273,6 +1701,11 @@ function bind() {
     if (settingsOpen) return;
     const typing = document.activeElement === $('#search');
     if (e.key === '/' && !typing && !detailOpen) { e.preventDefault(); $('#search').focus(); return; }
+    if (typing && e.ctrlKey && e.key === 'Delete' && !$('#btn-clear-search-history').hidden) {
+      e.preventDefault();
+      clearRecentSearches();
+      return;
+    }
     if (typing && suggestionsOpen() && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
       e.preventDefault();
       if (suggestIndex === -1) suggestIndex = e.key === 'ArrowDown' ? 0 : suggestList.length - 1;
@@ -1281,6 +1714,7 @@ function bind() {
       return;
     }
     if (e.key === 'Enter') {
+      if (detailOpen && e.target instanceof HTMLButtonElement && $('#detail').contains(e.target)) return;
       if (detailOpen) applyCurrent();
       else if (typing) {
         e.preventDefault();
@@ -1302,7 +1736,8 @@ function bind() {
     if (k === 'd' && detailOpen) { saveImageAs(); return; }
   });
   window.addEventListener('wheel', e => {
-    if ($('#detail').classList.contains('is-open') || $('#settings').classList.contains('is-open')) return;
+    if (['#detail', '#settings', '#motion-library'].some(selector => $(selector).classList.contains('is-open'))) return;
+    if (e.target instanceof Element && e.target.closest('#search-assist')) return;
     const grid = $('#grid');
     if (!(e.target instanceof Node) || !grid.contains(e.target)) grid.scrollTop += e.deltaY;
     if (e.deltaY > 0) queueWallhavenAutoLoad();
@@ -1310,6 +1745,10 @@ function bind() {
 }
 
 function bindApiEvents() {
+  api.on('wallpaper:applyProgress', stage => {
+    const key = { download: 'downloadingWallpaper', prepare: 'preparingWallpaper', write: 'applying' }[stage];
+    if (S.busy && key) $('#receipt').textContent = t(key);
+  });
   api.on('wallhaven:updated', ({ added, status, replace }) => {
     if (replace) {
       updateCatalog({ items: added.concat(S.items.filter(item => item.source !== 'wallhaven')),
@@ -1320,33 +1759,45 @@ function bindApiEvents() {
     const fresh = added.filter(item => !indexedItems.has(item.id));
     for (const item of fresh) indexedItems.set(item.id, item);
     S.items = S.items.concat(fresh);
-    paintCatalogCount();
-    paintStatus();
     renderSearch(true);
   });
   api.on('bootstrap:ready', d => {
-    if (d.status) S.status = d.status;
     if (d.settings) S.settings = Object.assign({}, S.settings, d.settings);
     if (d.background) setPaper(d.background);
-    if (d.loading) paintStatus();
-    else updateCatalog(d);
+    if (!d.loading) updateCatalog(d);
   });
   api.on('wallpaper:changed', p => {
-    if (p.background) setPaper(p.background);
-    if (p.verification && p.verification.ok) { S.status = p.verification; paintStatus(); }
+    S.undoAvailable = Boolean(p.undoAvailable);
+    paintSide();
+    if ('background' in p) setPaper(p.background);
+    if (p.verification?.ok) { S.status = p.verification; paintEngineStatus(); }
     if (p.history) {
       S.history = p.history;
       if (S.scope === 'history') renderSearch();
     }
   });
+  api.on('displays:changed', status => {
+    S.status = status;
+    if (status.ok && Array.isArray(status.monitors)) {
+      const active = status.monitors.filter(m => m.active && m.width > 0 && m.height > 0);
+      if (active.length) {
+        const sameLayout = active.length === S.monitors.length && active.every((monitor, index) => {
+          const previous = S.monitors[index];
+          return ['id', 'index', 'x', 'y', 'width', 'height'].every(key => monitor[key] === previous[key]);
+        });
+        S.monitors = active;
+        if (!active.some(m => m.id === S.monitorId)) S.monitorId = null;
+        if (!sameLayout) {
+          paintSide();
+          paintPreview();
+        }
+      }
+    }
+    paintEngineStatus();
+  });
   api.on('tray:command', p => {
     if (p.type !== 'favorite') return;
-    S.favorites = p.favorites;
-    if (S.current?.id === p.id) {
-      $('#btn-fav').textContent = p.favorited ? t('savedOn') : t('save');
-      S.currentCard?.classList.toggle('is-fav', p.favorited);
-    }
-    if (S.scope === 'saved') { applyFilters(); render(); }
+    updateFavorites(p.favorites, p.id);
     toast(p.favorited ? t('savedToast') : t('removed'));
   });
   api.on('sources:updated', refresh);
@@ -1370,5 +1821,4 @@ window.addEventListener('resize', layout);
 boot().catch(e => {
   $('#fatal').classList.add('is-on');
   $('#fatal-detail').textContent = String(e.message || e);
-  $('#engine-status').textContent = t('bootFailed');
 });

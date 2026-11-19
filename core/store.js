@@ -19,6 +19,8 @@ const DEFAULTS = {
     autoStart: false
   },
   credentials: { unsplash: '', pexels: '', wallhaven: '', proxy: '' },
+  desktop: { undo: null, profiles: {} },
+  motionLibrary: [],
   customFolders: []
 };
 
@@ -35,7 +37,8 @@ class Store {
       const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8'));
       return Object.assign({}, structuredClone(DEFAULTS), parsed, {
         settings: Object.assign({}, DEFAULTS.settings, parsed.settings || {}),
-        credentials: Object.assign({}, DEFAULTS.credentials, parsed.credentials || {})
+        credentials: Object.assign({}, DEFAULTS.credentials, parsed.credentials || {}),
+        desktop: Object.assign({}, DEFAULTS.desktop, parsed.desktop || {})
       });
     } catch (e) {
       return structuredClone(DEFAULTS);
@@ -67,6 +70,20 @@ class Store {
     this.save();
   }
 
+  setDesktop(patch) {
+    const previous = this.state.desktop;
+    this.state.desktop = { ...previous, ...patch };
+    try { this.save(); }
+    catch (error) { this.state.desktop = previous; throw error; }
+  }
+
+  setMotionLibrary(files) {
+    const previous = this.state.motionLibrary;
+    this.state.motionLibrary = files;
+    try { this.save(); }
+    catch (error) { this.state.motionLibrary = previous; throw error; }
+  }
+
   isFavorite(id) { return this.state.favorites.some(f => f.id === id); }
 
   toggleFavorite(item) {
@@ -75,6 +92,24 @@ class Store {
     else this.state.favorites.unshift(pick(item));
     this.save();
     return { favorited: i < 0, favorites: this.state.favorites };
+  }
+
+  renameFavorite(id, name) {
+    const index = this.state.favorites.findIndex(item => item.id === id);
+    if (index < 0) return { ok: false, code: 'NOT_FAVORITE' };
+    if (typeof name !== 'string') return { ok: false, code: 'INVALID_NAME' };
+    const customName = name.trim();
+    if (customName.length > 60 || (customName && !/[\p{L}\p{N}]/u.test(customName)) || /[\r\n]/.test(customName)) {
+      return { ok: false, code: 'INVALID_NAME' };
+    }
+    const previous = this.state.favorites;
+    const renamed = { ...previous[index] };
+    if (customName && customName !== renamed.title) renamed.customName = customName;
+    else delete renamed.customName;
+    this.state.favorites = previous.map((item, i) => i === index ? renamed : item);
+    try { this.save(); }
+    catch (error) { this.state.favorites = previous; throw error; }
+    return { ok: true, favorites: this.state.favorites };
   }
 
   favorites() { return this.state.favorites; }

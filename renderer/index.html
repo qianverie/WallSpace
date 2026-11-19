@@ -19,7 +19,11 @@
 
   <!-- boot transition: an editorial wipe, not a spinner -->
   <div id="boot-curtain">
-    <div class="boot-mark">WALL／SCAPE</div>
+    <div class="brand-lockup boot-mark" aria-label="Wallscape">
+      <span aria-hidden="true">WALL</span>
+      <img class="brand-mark" src="../assets/brand-mark.png" alt="">
+      <span aria-hidden="true">SCAPE</span>
+    </div>
     <div class="boot-rule"></div>
   </div>
 
@@ -32,12 +36,11 @@
 
   <div class="chrome" id="chrome">
     <header id="masthead">
-      <h1 id="logotype">WALL<span class="slash">／</span>SCAPE</h1>
-      <div class="mast-meta">
-        <span id="mast-count">000</span>
-        <span class="mast-sep"></span>
-        <span id="mast-genre">全部题材</span>
-      </div>
+      <h1 id="logotype" class="brand-lockup" aria-label="Wallscape">
+        <span aria-hidden="true">WALL</span>
+        <img class="brand-mark" src="../assets/brand-mark.png" alt="">
+        <span aria-hidden="true">SCAPE</span>
+      </h1>
     </header>
 
     <nav id="filters" aria-label="筛选">
@@ -60,16 +63,20 @@
         <button type="button" class="filter-word" data-sort="popular" data-i18n="sortPopular" aria-pressed="false">热门</button>
         <button type="button" class="filter-word" data-sort="newest" data-i18n="sortNewest" aria-pressed="false">最新</button>
       </div>
+    </div>
+
+    <div id="search-assist">
       <div id="suggestions" role="listbox"></div>
+      <button id="btn-clear-search-history" type="button" tabindex="-1" data-i18n="clearSearchHistory" hidden>清空历史</button>
     </div>
 
     <footer id="status-strip">
-      <span id="engine-status">ENGINE —</span>
-      <span id="source-status"></span>
+      <span id="engine-status" role="status" hidden></span>
       <span class="spacer"></span>
       <button class="strip-action" id="btn-back-to-top" data-i18n="backToTop" hidden>回顶部</button>
       <button class="strip-action" id="btn-wallhaven-more" data-i18n="moreWallhaven" hidden>更多壁纸</button>
       <span class="strip-action" id="btn-refresh" data-i18n="refresh">刷新</span>
+      <button type="button" class="strip-action" id="btn-motion" data-i18n="motionLibrary">动态壁纸</button>
       <span class="strip-action" id="btn-settings" data-i18n="settings">设置</span>
     </footer>
   </div>
@@ -79,7 +86,7 @@
   <div id="fatal"><strong data-i18n="bootFailed">启动失败</strong><span id="fatal-detail"></span></div>
 
   <section id="detail" aria-hidden="true">
-    <div id="detail-visual"><img id="detail-img" alt=""></div>
+    <div id="detail-visual" aria-hidden="true"><div id="detail-preview" class="preview-plane"></div></div>
     <div id="detail-veil"></div>
     <div class="detail-chrome">
       <div class="detail-top">
@@ -94,10 +101,14 @@
       </div>
       <div class="detail-side">
         <span id="btn-fav" data-i18n="save">收藏</span>
+        <button id="btn-rename-favorite" type="button" data-i18n="renameFavorite" hidden>重命名</button>
         <span id="btn-save" data-i18n="saveImageAs">导出原图</span>
         <span id="btn-source" data-i18n="sourceLink">来源 ↗</span>
         <span id="btn-lock">锁屏 / 关</span>
         <span id="btn-monitor">显示器 / 全部</span>
+        <button id="btn-save-framing" type="button" data-i18n="saveFraming">保存构图</button>
+        <button id="btn-reset-framing" type="button" data-i18n="resetFraming">重置构图</button>
+        <button id="btn-undo-wallpaper" type="button" data-i18n="undoWallpaper" hidden>撤销上次应用</button>
       </div>
       <div id="mode-scale"></div>
       <div id="apply-bar"><span data-i18n="apply">应用到桌面</span><span id="apply-arrow">↗</span></div>
@@ -151,6 +162,10 @@
 
         <div class="settings-section">
           <h3 data-i18n="desktop">桌面</h3>
+          <p class="settings-note" data-i18n="desktopProfileNote">保存每块屏幕当前的壁纸。相同的屏幕布局重新连接时会恢复。</p>
+          <button type="button" class="settings-action" id="btn-save-desktop-profile" data-i18n="saveDesktopProfile">保存显示器方案</button>
+          <button type="button" class="settings-action" id="btn-restore-desktop-profile" data-i18n="restoreDesktopProfile">恢复显示器方案</button>
+          <div class="settings-info" id="desktop-profile-status" role="status"></div>
           <div class="settings-action" id="btn-autostart">开机自启 / 关</div>
           <div class="settings-info" id="cache-info">CACHE —</div>
           <div class="settings-action" id="btn-cache-clear" data-i18n="clearCache">清理缓存</div>
@@ -174,10 +189,56 @@
     </div>
   </section>
 
+  <dialog id="favorite-name-dialog" aria-labelledby="favorite-name-label">
+    <form id="favorite-name-form">
+      <label id="favorite-name-label" for="favorite-name" data-i18n="renameFavorite">重命名</label>
+      <input id="favorite-name" type="text" maxlength="60" autocomplete="off" aria-describedby="favorite-name-hint" autofocus>
+      <p id="favorite-name-hint" data-i18n="favoriteNameHint">留空可恢复原名</p>
+      <p id="favorite-name-error" role="alert" hidden></p>
+      <div class="favorite-name-actions">
+        <button id="favorite-name-cancel" type="button" data-i18n="cancelRename">取消</button>
+        <button id="favorite-name-save" type="submit" data-i18n="confirmRename">保存名称</button>
+      </div>
+    </form>
+  </dialog>
+  <section id="motion-library" aria-labelledby="motion-heading" aria-hidden="true">
+    <header class="motion-head">
+      <h2 id="motion-heading" data-i18n="motionLibrary">动态壁纸</h2>
+      <button type="button" id="btn-motion-close" data-i18n="close">关闭</button>
+    </header>
+    <nav class="motion-tools">
+      <button type="button" id="btn-motion-featured" aria-pressed="true" data-i18n="motionFeatured">精选壁纸</button>
+      <button type="button" id="btn-motion-local" aria-pressed="false" data-i18n="motionLocal">本地视频</button>
+      <button type="button" id="btn-motion-import" hidden data-i18n="motionImport">导入视频</button>
+      <form id="motion-search-form">
+        <input id="motion-search" type="search" maxlength="80" data-i18n-ph="motionSearch" placeholder="搜索精选壁纸">
+        <button type="submit" data-i18n="motionSearchAction">搜索</button>
+      </form>
+    </nav>
+    <div class="motion-body">
+      <div id="motion-items"></div>
+      <div class="motion-view">
+        <div class="motion-frame"><video id="motion-preview" muted loop playsinline></video></div>
+        <div class="motion-caption">
+          <h3 id="motion-title"></h3>
+          <p id="motion-attribution"></p>
+        </div>
+      </div>
+    </div>
+    <footer class="motion-footer">
+      <label for="motion-monitor" data-i18n="monitor">显示器</label>
+      <select id="motion-monitor"></select>
+      <span id="motion-status" role="status"></span>
+      <button type="button" id="btn-motion-play" data-i18n="apply" disabled>应用到桌面</button>
+      <button type="button" id="btn-motion-stop" data-i18n="motionStop" disabled>停止播放</button>
+    </footer>
+  </section>
   <div id="toast"></div>
 </div>
 
 <script src="search.js"></script>
+<script src="framing.js"></script>
 <script src="app.js"></script>
+<script src="motion.js"></script>
 </body>
 </html>

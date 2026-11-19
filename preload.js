@@ -1,7 +1,7 @@
 'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = new Set(['wallpaper:changed', 'tray:command', 'sources:updated', 'wallhaven:updated', 'bootstrap:ready', 'window:resized']);
+const EVENTS = new Set(['wallpaper:changed', 'wallpaper:applyProgress', 'tray:command', 'sources:updated', 'wallhaven:updated', 'bootstrap:ready', 'window:resized', 'displays:changed', 'motion:active']);
 
 contextBridge.exposeInMainWorld('wsp', {
   dragStart: () => ipcRenderer.send('window:dragStart'),
@@ -12,7 +12,11 @@ contextBridge.exposeInMainWorld('wsp', {
   searchSources: (query, genre, filters) => ipcRenderer.invoke('sources:search', { query, genre, filters }),
   wallhavenMore: (query, page, genre, filters) => ipcRenderer.invoke('sources:wallhavenMore', { query, page, genre, filters }),
   apply: payload => ipcRenderer.invoke('item:apply', payload),
+  undoWallpaper: () => ipcRenderer.invoke('desktop:undo'),
+  saveDesktopProfile: () => ipcRenderer.invoke('desktop:saveProfile'),
+  restoreDesktopProfile: () => ipcRenderer.invoke('desktop:restoreProfile'),
   toggleFavorite: item => ipcRenderer.invoke('item:favorite', item),
+  renameFavorite: (id, name) => ipcRenderer.invoke('item:renameFavorite', { id, name }),
   saveImageAs: item => ipcRenderer.invoke('item:saveAs', item),
   setSettings: patch => ipcRenderer.invoke('settings:set', patch),
   setCredentials: patch => ipcRenderer.invoke('credentials:set', patch),
@@ -21,12 +25,18 @@ contextBridge.exposeInMainWorld('wsp', {
   cacheClear: () => ipcRenderer.invoke('cache:clear'),
   lockProbe: () => ipcRenderer.invoke('engine:lockProbe'),
   pickFolder: () => ipcRenderer.invoke('folders:pick'),
-  readStatus: () => ipcRenderer.invoke('status:read'),
+  readStatus: (force = false) => ipcRenderer.invoke('status:read', force),
   openExternal: url => ipcRenderer.invoke('shell:open', url),
   hide: () => ipcRenderer.invoke('window:hide'),
   setWindowMode: mode => ipcRenderer.invoke('window:setMode', { mode }),
   toggleWindowMode: () => ipcRenderer.invoke('window:toggleMode'),
   getWindowMode: () => ipcRenderer.invoke('window:mode'),
+  motionLibrary: () => ipcRenderer.invoke('motion:library'),
+  importMotion: () => ipcRenderer.invoke('motion:import'),
+  searchMotion: (query, language) => ipcRenderer.invoke('motion:search', query, language),
+  previewMotion: id => ipcRenderer.invoke('motion:preview', id),
+  playMotion: (id, monitorId) => ipcRenderer.invoke('motion:play', { id, monitorId }),
+  stopMotion: monitorId => ipcRenderer.invoke('motion:stop', monitorId),
   toggleFullscreen: () => ipcRenderer.invoke('window:toggleMode'),
   quit: () => ipcRenderer.invoke('window:quit'),
   on: (channel, fn) => {

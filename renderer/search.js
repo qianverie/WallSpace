@@ -2,6 +2,7 @@
 
 const wallpaperSearch = (() => {
   const cache = new WeakMap();
+  const nameCache = new WeakMap();
   const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
   const stopWords = new Set(['and', 'the', 'in', 'by', 'of', 'on', 'for', 'with', 'from', 'a', 'an', 'to', 'unknown']);
   const animeSubject = /\b(anime|manga|waifu|chibi|vtuber|vocaloid|genshin impact)\b|动漫|動漫|动画|動畫|漫画|漫畫|二次元|アニメ/u;
@@ -67,14 +68,29 @@ const wallpaperSearch = (() => {
     return entry;
   }
 
-  function suggest(items, value, recent = [], limit = 6) {
+  function indexWithName(item, name) {
+    const base = index(item);
+    if (!name) return base;
+    const cached = nameCache.get(item);
+    if (cached?.name === name) return cached.entry;
+    const words = new Map(base.words);
+    words.set(normalize(name), { label: name, weight: 6 });
+    for (const part of segmenter.segment(name)) {
+      if (part.isWordLike) words.set(normalize(part.segment), { label: part.segment, weight: 5 });
+    }
+    const entry = { ...base, text: base.text + ' ' + normalize(name), words };
+    nameCache.set(item, { name, entry });
+    return entry;
+  }
+
+  function suggest(items, value, recent = [], limit = 6, customName = () => '') {
     const query = normalize(value);
     if (!query) return recent.slice(0, limit);
     const before = terms(value);
     const fragment = /[^\p{L}\p{M}\p{N}]$/u.test(value) ? '' : before.pop();
     const scores = new Map();
     for (const item of items) {
-      const entry = index(item);
+      const entry = indexWithName(item, customName(item));
       if (!matches(entry, before)) continue;
       for (const [word, candidate] of entry.words) {
         const rank = word.startsWith(query) ? 0 : word.startsWith(fragment) ? 1 : word.includes(fragment) ? 2 : -1;
@@ -105,7 +121,7 @@ const wallpaperSearch = (() => {
   const compareDate = (left, right) => index(right).date.localeCompare(index(left).date);
   const comparePopularity = (left, right) => (right.stats?.favorites ?? -1) - (left.stats?.favorites ?? -1) ||
     (right.stats?.views ?? -1) - (left.stats?.views ?? -1);
-  return { normalize, terms, matches, index, suggest, matchesGenre, compareGenre, compareDate, comparePopularity };
+  return { normalize, terms, matches, index, indexWithName, suggest, matchesGenre, compareGenre, compareDate, comparePopularity };
 })();
 
 if (typeof module === 'object') module.exports = wallpaperSearch;

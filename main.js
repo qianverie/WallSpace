@@ -6,13 +6,15 @@ const {
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
-const zlib = require('node:zlib');
 const { Store } = require('./core/store');
 const providers = require('./core/providers');
 const wallpaper = require('./core/wallpaper');
+const { createDesktop } = require('./core/desktop');
+const { createMotion } = require('./core/motion');
 const { download } = require('./core/fetch');
 
 const ROOT = __dirname;
+const APP_ICON = path.join(ROOT, 'assets', 'wallscape.ico');
 const IN_ASAR = ROOT.includes('app.asar');
 // Portable build: app.asar is read-only, so all writable state lives beside
 // the runtime, not inside the archive. WSP_BASE is set by 启动.cmd.
@@ -50,50 +52,15 @@ const WALLHAVEN_WARM_TARGET = 360;
 const WALLHAVEN_WARM_MAX_PAGE = 18;
 let lastAppliedId = null;
 let applying = false;
+let displayTimer;
+let displayStatus = null;
+let displayRead = null;
+let displayRevision = 0;
 let rebuilding = false;
 let windowMode = store.state.settings.windowMode === 'window' ? 'window' : 'immersive';
 // Self-check override: WS_MODE=window proves a standard framed window renders.
 if (process.env.WS_MODE === 'window' || process.env.WS_MODE === 'immersive') {
   windowMode = process.env.WS_MODE;
-}
-
-/* ---------- tiny PNG encoder: no binary assets shipped ---------- */
-function crc32(buf) {
-  const table = [];
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-    table[n] = c >>> 0;
-  }
-  let crc = 0xFFFFFFFF;
-  for (const b of buf) crc = table[(crc ^ b) & 0xFF] ^ (crc >>> 8);
-  return (crc ^ 0xFFFFFFFF) >>> 0;
-}
-function chunk(type, data) {
-  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
-  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
-  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body));
-  return Buffer.concat([len, body, crc]);
-}
-function trayIconPng() {
-  const S = 32, raw = Buffer.alloc(S * (1 + S * 4));
-  for (let y = 0; y < S; y++) {
-    const row = y * (1 + S * 4);
-    raw[row] = 0;
-    for (let x = 0; x < S; x++) {
-      const o = row + 1 + x * 4;
-      const bar = (y >= 8 && y < 12) || (y >= 15 && y < 19) || (y >= 22 && y < 26);
-      const v = bar && x >= 5 && x < 27 ? 255 : 0;
-      raw[o] = v; raw[o + 1] = v; raw[o + 2] = v; raw[o + 3] = 255;
-    }
-  }
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(S, 0); ihdr.writeUInt32BE(S, 4);
-  ihdr[8] = 8; ihdr[9] = 6;
-  return Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))
-  ]);
 }
 
 /* ---------- current wallpaper as an in-memory data URL for the paper layer ---------- */
@@ -136,6 +103,7 @@ function createWindow() {
     backgroundColor: '#000000',
     show: false,
     title: 'WALL／SCAPE',
+    icon: APP_ICON,
     webPreferences: {
       preload: path.join(ROOT, 'preload.js'),
       contextIsolation: true,
@@ -169,6 +137,7 @@ function createWindow() {
     }
   }
   win = new BrowserWindow(opts);
+  win.on('focus', () => refreshDisplayStatus(true));
   // WINDOW is a uniformly scaled 16:9 copy of the FULLSCREEN stage.
   if (!immersive) {
     try { win.setAspectRatio(16 / 9); } catch (e) { /* unsupported */ }
@@ -240,13 +209,7 @@ function showWindow() {
 
 /* ---------- tray + shortcuts ---------- */
 function buildTray() {
-  const png = trayIconPng();
-  try {
-    const assetsDir = path.join(BASE, 'assets');
-    fs.mkdirSync(assetsDir, { recursive: true });
-    fs.writeFileSync(path.join(assetsDir, 'tray.png'), png);
-  } catch (e) { /* icon is generated in memory anyway */ }
-  tray = new Tray(nativeImage.createFromBuffer(png));
+  tray = new Tray(APP_ICON);
   tray.setToolTip('WALL／SCAPE — 双击显示');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '显示 / 隐藏', click: () => win && (win.isVisible() ? win.hide() : showWindow()) },
@@ -292,8 +255,9 @@ function extFor(url) {
   return m ? (m[1].toLowerCase() === 'jpeg' ? '.jpg' : '.' + m[1].toLowerCase()) : '.jpg';
 }
 
-async function ensureLocal(item) {
+async function findImageSource(item, progress) {
   let source = null;
+  let cachedDownload = false;
   if (item.localPath && fs.existsSync(item.localPath)) {
     source = item.localPath;
   } else {
@@ -306,25 +270,77 @@ async function ensureLocal(item) {
       const hash = crypto.createHash('sha1').update(url).digest('hex').slice(0, 18);
       const ext = item.ext || extFor(url);
       const dest = path.join(CACHE, hash + ext);
-      if (!fs.existsSync(dest)) await downloadImage(url, dest);
+      if (!fs.existsSync(dest)) {
+        progress?.('download');
+        await downloadImage(url, dest);
+      }
       source = dest;
+      cachedDownload = true;
     }
   }
+  return { source, cachedDownload };
+}
 
+async function normalizeImage({ source, cachedDownload }) {
   // Content/extension mismatches (WebP or PNG bytes saved as .jpg) and a
   // partially downloaded file are the main causes of a failing first apply.
   // Validate the bytes really decode, then hand Windows ONE canonical PNG.
   let img = null;
   try { img = nativeImage.createFromPath(source); } catch (e) { /* invalid */ }
+  if ((!img || img.isEmpty()) && win && !win.isDestroyed()) {
+    // Chromium also supports the local-library formats that nativeImage
+    // cannot decode directly, including BMP and WebP.
+    try {
+      const bytes = fs.readFileSync(source).toString('base64');
+      const png = await win.webContents.executeJavaScript(`(async () => {
+        const image = new Image();
+        image.src = "data:application/octet-stream;base64," + ${JSON.stringify(bytes)};
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        return canvas.toDataURL("image/png");
+      })()`);
+      img = nativeImage.createFromDataURL(png);
+    } catch (e) { /* Handle undecodable input below. */ }
+  }
   if (!img || img.isEmpty()) {
-    if (!item.localPath) { try { fs.unlinkSync(source); } catch (e) { /* ignore */ } }
+    if (cachedDownload) { try { fs.unlinkSync(source); } catch (e) { /* ignore */ } }
     throw new Error('image is not decodable (incomplete download or unsupported format)');
   }
-  const key = crypto.createHash('sha1').update(source).digest('hex').slice(0, 18);
+  const normalizedBytes = img.toPNG();
+  const key = crypto.createHash('sha1').update(normalizedBytes).digest('hex').slice(0, 18);
   const normalized = path.join(CACHE, 'applied-' + key + '.png');
-  if (!fs.existsSync(normalized)) fs.writeFileSync(normalized, img.toPNG());
-  return normalized;
+  if (!fs.existsSync(normalized)) fs.writeFileSync(normalized, normalizedBytes);
+  return { source: normalized, ...img.getSize() };
 }
+
+async function prepareDesktopImage(item, progress) {
+  const local = await findImageSource(item, progress);
+  progress?.('prepare');
+  // JPEG, PNG and BMP can go directly to the background compositor. A
+  // full-resolution intermediate PNG is only needed for other formats.
+  const measured = await wallpaper.run('measure', { image: local.source });
+  if (measured.ok) return { source: local.source, width: measured.width, height: measured.height };
+  return normalizeImage(local);
+}
+
+const desktop = createDesktop({
+  directory: path.join(STATE_DIR, 'desktop'), store, engine: wallpaper, prepareImage: prepareDesktopImage,
+  async decode(file) {
+    const size = await wallpaper.run('measure', { image: file });
+    if (!size.ok) throw new Error(size.error || 'Unable to decode desktop image');
+    return { width: size.width, height: size.height };
+  }
+});
+
+const motion = createMotion({
+  BrowserWindow, dialog, root: ROOT, store, readDesktop: desktop.read,
+  notify(active) {
+    if (win && !win.isDestroyed()) win.webContents.send('motion:active', active);
+  }
+});
 
 function cacheStats() {
   let bytes = 0, count = 0;
@@ -338,46 +354,73 @@ function cacheStats() {
 }
 
 /* ---------- apply ---------- */
+function notifyDesktopChanged(result) {
+  if (!result?.desktop) return;
+  const primary = result.desktop.monitors.find(m => m.x === 0 && m.y === 0) || result.desktop.monitors[0];
+  const primaryChanged = primary.wallpaper !== store.state.settings.lastWallpaperPath;
+  if (primaryChanged) store.setSettings({ lastWallpaperPath: primary.wallpaper });
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('wallpaper:changed', {
+      ...(primaryChanged ? { background: primary.wallpaper ? currentWallpaperDataUrl(primary.wallpaper) : null } : {}),
+      history: store.state.history,
+      undoAvailable: Boolean(store.state.desktop.undo)
+    });
+  }
+}
+
 async function applyItem(item, opts = {}) {
   const style = opts.style || store.state.settings.style || 'fill';
-  let local;
-  try {
-    local = await ensureLocal(item);
-  } catch (e) {
-    return { ok: false, stage: 'download', code: e.code, error: String(e.message || e), item: { id: item.id, title: item.title } };
-  }
-  const args = {
-    image: local, style,
-    monitorIndex: opts.monitorIndex == null ? -1 : opts.monitorIndex
-  };
-  let receipt = await wallpaper.run('apply', args);
-  let attempts = 1;
-  if (!receipt.ok) {
-    // One clean retry: rebuild the canonical PNG and call the engine again.
-    // Covers a cold PowerShell/Add-Type compile or a locked TranscodedWallpaper.
-    attempts = 2;
-    try { fs.unlinkSync(local); } catch (e) { /* ignore */ }
-    try {
-      local = await ensureLocal(item);
-      receipt = await wallpaper.run('apply', Object.assign({}, args, { image: local }));
-    } catch (e) {
-      return { ok: false, stage: 'download', code: e.code, error: String(e.message || e), attempts, item };
-    }
-  }
-  if (!receipt.ok) {
-    return { ok: false, stage: 'engine', error: receipt.error, receipt, attempts, item };
-  }
-
-  const verification = await wallpaper.run('status');
+  let result;
+  try { result = await desktop.apply(item, { ...opts, style }); }
+  catch (error) { return { ok: false, code: error.code, error: error.message }; }
+  if (!result.ok) return result;
+  motion.stop(style === 'span' ? null : opts.monitorId);
   let lock = null;
-  if (opts.syncLock) lock = await wallpaper.run('lock', { image: local });
+  if (opts.syncLock) lock = await wallpaper.run('lock', { image: result.source });
 
   store.pushHistory(item);
-  store.setSettings({ style, lastWallpaper: item.id, lastWallpaperPath: local });
+  store.setSettings({ style, lastWallpaper: item.id });
   lastAppliedId = item.id;
-  const background = currentWallpaperDataUrl(local);
-  if (win) win.webContents.send('wallpaper:changed', { item, local, style, verification, background, history: store.state.history });
-  return { ok: true, item, style, local, receipt, verification, lock, background, attempts };
+  notifyDesktopChanged(result);
+  return { ok: true, item, style, lock, targetCount: result.targetCount };
+}
+
+async function runDesktopAction(action) {
+  if (applying) return { ok: false, error: 'A wallpaper operation is already in progress' };
+  applying = true;
+  try {
+    const result = await action();
+    if (result?.ok) notifyDesktopChanged(result);
+    return result && { ok: result.ok, error: result.error, undoAvailable: Boolean(store.state.desktop.undo) };
+  } catch (error) {
+    return { ok: false, error: error.message, undoAvailable: Boolean(store.state.desktop.undo) };
+  } finally { applying = false; }
+}
+
+function refreshDisplayStatus(force = false) {
+  if (displayRead && !force) return displayRead;
+  const revision = ++displayRevision;
+  displayRead = wallpaper.run('status').then(status => {
+    if (revision !== displayRevision) return null;
+    displayStatus = status;
+    if (win && !win.isDestroyed()) win.webContents.send('displays:changed', status);
+    if (status.ok && status.monitors?.some(m => m.active)) motion.displaysChanged(status.monitors);
+    return status;
+  }).finally(() => {
+    if (revision === displayRevision) displayRead = null;
+  });
+  return displayRead;
+}
+
+function onDisplaysChanged() {
+  clearTimeout(displayTimer);
+  displayTimer = setTimeout(async () => {
+    const status = await refreshDisplayStatus(true);
+    if (status?.ok && !SELFTEST && Object.keys(store.state.desktop.profiles).length) {
+      if (applying) { onDisplaysChanged(); return; }
+      await runDesktopAction(() => desktop.restoreProfile(true));
+    }
+  }, 250);
 }
 
 async function step(delta) {
@@ -467,7 +510,7 @@ function scheduleWallhavenWarmup(attempt = 0, delay = 1800) {
   }, delay);
 }
 
-function bootstrapPayload(status) {
+function bootstrapPayload() {
   const settings = Object.assign({}, store.state.settings, { windowMode });
   try { settings.autoStart = app.getLoginItemSettings().openAtLogin; } catch (e) { /* unsupported */ }
   return {
@@ -477,7 +520,7 @@ function bootstrapPayload(status) {
     history: store.state.history,
     credentials: Object.fromEntries(Object.entries(store.state.credentials).map(([k, v]) => [k, Boolean(v)])),
     folders: store.state.customFolders,
-    status,
+    undoAvailable: Boolean(store.state.desktop.undo),
     background: currentWallpaperDataUrl(),
     runtime: { electron: process.versions.electron || 'unknown', node: process.versions.node }
   };
@@ -490,23 +533,20 @@ ipcMain.handle('app:bootstrap', async () => {
   const cached = providers.loadCached(DATA, store.state.credentials, store.state.customFolders);
   items = cached.items;
   sourcesState = cached.sources;
-  const payload = bootstrapPayload(null);
+  const payload = { ...bootstrapPayload(), status: displayStatus };
   payload.loading = true;
 
   (async () => {
     const loaded = loadSources();
-    let status = null;
-    try { status = await wallpaper.run('status'); } catch (e) { /* ignore */ }
     const push = extra => {
       if (win && !win.isDestroyed()) win.webContents.send('bootstrap:ready', extra);
     };
-    push(Object.assign(bootstrapPayload(status), { loading: true }));
     try {
       await loaded;
-      push(bootstrapPayload(status));
+      push(bootstrapPayload());
     } catch (e) {
       console.log('[bootstrap] online refresh failed: ' + (e.message || e));
-      push(Object.assign(bootstrapPayload(status), { loading: false }));
+      push(bootstrapPayload());
     }
   })();
 
@@ -530,15 +570,21 @@ ipcMain.handle('sources:wallhavenMore', async (_e, { query, page, genre, filters
   return { items, sources: sourcesState };
 });
 
-ipcMain.handle('item:apply', async (_e, payload) => {
+ipcMain.handle('item:apply', async (event, payload) => {
   if (applying) return { ok: false, error: '另一个应用操作正在进行' };
   applying = true;
-  try { return await applyItem(payload.item, payload); } finally { applying = false; }
+  const progress = stage => {
+    if (!event.sender.isDestroyed()) event.sender.send('wallpaper:applyProgress', stage);
+  };
+  try { return await applyItem(payload.item, { ...payload, progress }); } finally { applying = false; }
 });
+ipcMain.handle('desktop:undo', () => runDesktopAction(desktop.undo));
+ipcMain.handle('desktop:saveProfile', () => runDesktopAction(desktop.saveProfile));
+ipcMain.handle('desktop:restoreProfile', () => runDesktopAction(desktop.restoreProfile));
 
 ipcMain.handle('item:saveAs', async (_e, item) => {
   let src;
-  try { src = await ensureLocal(item); }
+  try { ({ source: src } = await normalizeImage(await findImageSource(item))); }
   catch (e) { return { ok: false, error: String(e.message || e) }; }
   const ext = path.extname(src) || '.jpg';
   const safe = String(item.title || 'wallpaper').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
@@ -554,6 +600,21 @@ ipcMain.handle('item:saveAs', async (_e, item) => {
 });
 
 ipcMain.handle('item:favorite', (_e, item) => store.toggleFavorite(item));
+ipcMain.handle('item:renameFavorite', (_e, { id, name }) => store.renameFavorite(id, name));
+ipcMain.handle('motion:library', () => ({ items: motion.library(), active: motion.active() }));
+ipcMain.handle('motion:import', () => motion.importFiles(win));
+ipcMain.handle('motion:search', (_e, query, language) => motion.browse(query, language));
+ipcMain.handle('motion:preview', (_e, id) => motion.preview(id));
+ipcMain.handle('motion:play', async (_e, { id, monitorId }) => {
+  if (applying) throw new Error('Another wallpaper operation is already in progress');
+  applying = true;
+  try { return await motion.play(id, monitorId); }
+  finally { applying = false; }
+});
+ipcMain.handle('motion:stop', (_e, monitorId) => {
+  if (!monitorId || applying) return motion.active();
+  return motion.stop(monitorId);
+});
 ipcMain.handle('settings:set', (_e, patch) => store.setSettings(patch));
 ipcMain.handle('window:setMode', (_e, { mode } = {}) => setWindowMode(mode));
 ipcMain.handle('window:toggleMode', () => setWindowMode(windowMode === 'window' ? 'immersive' : 'window'));
@@ -600,7 +661,7 @@ ipcMain.handle('folders:pick', async () => {
   return { ok: true, folders: next, items: loaded.items, sources: loaded.sources };
 });
 
-ipcMain.handle('status:read', () => wallpaper.run('status'));
+ipcMain.handle('status:read', (_event, force) => refreshDisplayStatus(force === true));
 ipcMain.handle('shell:open', (_e, url) => {
   if (/^https?:\/\//.test(url)) shell.openExternal(url);
   return true;
@@ -640,7 +701,9 @@ if (!gotLock) {
   app.on('second-instance', () => showWindow());
   app.whenReady().then(() => {
     protocol.handle('wsp', req => {
-      const p = decodeURIComponent(new URL(req.url).pathname).replace(/^\//, '');
+      const url = new URL(req.url);
+      if (url.hostname === 'motion') return motion.serve(req);
+      const p = decodeURIComponent(url.pathname).replace(/^\//, '');
       try {
         const buf = fs.readFileSync(p);
         const ext = path.extname(p).toLowerCase();
@@ -655,6 +718,11 @@ if (!gotLock) {
     createWindow();
     buildTray();
     registerShortcuts();
+    screen.on('display-added', onDisplaysChanged);
+    screen.on('display-removed', onDisplaysChanged);
+    screen.on('display-metrics-changed', (_event, _display, metrics) => {
+      if (metrics.some(metric => ['bounds', 'rotation', 'scaleFactor'].includes(metric))) onDisplaysChanged();
+    });
 
     // Opt-in self-check hooks. Normal launches never run them.
     if (process.env.WS_SHOT === '1' || process.env.WS_SELFTEST === '1' ||
@@ -800,5 +868,6 @@ if (!gotLock) {
   });
 }
 
+app.on('before-quit', () => motion.quit());
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', e => { if (!app.isQuitting) e.preventDefault(); });

@@ -20,13 +20,10 @@ function run(action, args = {}) {
       '-File', SCRIPT, '-Action', action
     ];
     if (args.image) argv.push('-Image', args.image);
-    if (args.style) argv.push('-Style', args.style);
-    if (args.monitorIndex != null && args.monitorIndex >= 0) {
-      argv.push('-MonitorIndex', String(args.monitorIndex));
-    }
+    if (args.planFile) argv.push('-PlanFile', args.planFile);
 
     execFile('powershell.exe', argv, {
-      timeout: 45000, windowsHide: true, maxBuffer: 4 * 1024 * 1024
+      timeout: 45000, windowsHide: true, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024
     }, (err, stdout, stderr) => {
       const lines = String(stdout || '').trim().split(/\r?\n/).filter(Boolean);
       let parsed = null;
