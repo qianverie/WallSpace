@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' wsp: https: data: blob:; img-src 'self' wsp: https: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>WALL／SCAPE</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="lang-zh">
+
+<!-- Frameless drag handle lives OUTSIDE the transformed stage: Chromium's
+     app-region hit-test uses real window coordinates here, so dragging works
+     regardless of the stage scale. -->
+<div id="frame-drag-top"></div>
+
+<!-- Everything lives on one fixed 16:9 stage. Both FULLSCREEN and WINDOW
+     render this exact stage; window mode only applies a uniform scale. -->
+<div id="stage">
+
+  <!-- boot transition: an editorial wipe, not a spinner -->
+  <div id="boot-curtain">
+    <div class="boot-mark">WALL／SCAPE</div>
+    <div class="boot-rule"></div>
+  </div>
+
+  <div id="drag-edge"></div>
+  <div id="paper"><div id="paper-image"></div><div id="paper-veil"></div></div>
+
+  <div class="chrome" id="edge-note">
+    <span>EDITION 001</span><span class="edge-rule"></span><span id="edge-date"></span>
+  </div>
+
+  <div class="chrome" id="chrome">
+    <header id="masthead">
+      <h1 id="logotype">WALL<span class="slash">／</span>SCAPE</h1>
+      <div class="mast-meta">
+        <span id="mast-count">000</span>
+        <span class="mast-sep"></span>
+        <span id="mast-genre">全部题材</span>
+      </div>
+    </header>
+
+    <nav id="filters" aria-label="筛选">
+      <div class="filter-block" id="scope-block"></div>
+      <div class="filter-block" id="genre-block" role="group" aria-label="题材"></div>
+      <div class="filter-block" id="tone-block"></div>
+      <div class="filter-block" id="ratio-block"></div>
+      <div class="filter-block" id="resolution-block"></div>
+    </nav>
+
+    <div id="searchbar">
+      <span class="search-mark">/</span>
+      <input id="search" type="text" autocomplete="off" spellcheck="false"
+             placeholder="搜索壁纸" data-i18n-ph="searchPlaceholder" maxlength="120"
+             role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions">
+      <span id="search-result" aria-live="polite"></span>
+      <div id="sort-control" role="group" aria-labelledby="sort-label">
+        <span id="sort-label" data-i18n="sortLabel">排序</span>
+        <button type="button" class="filter-word is-active" data-sort="relevance" data-i18n="sortDefault" aria-pressed="true">推荐</button>
+        <button type="button" class="filter-word" data-sort="popular" data-i18n="sortPopular" aria-pressed="false">热门</button>
+        <button type="button" class="filter-word" data-sort="newest" data-i18n="sortNewest" aria-pressed="false">最新</button>
+      </div>
+      <div id="suggestions" role="listbox"></div>
+    </div>
+
+    <footer id="status-strip">
+      <span id="engine-status">ENGINE —</span>
+      <span id="source-status"></span>
+      <span class="spacer"></span>
+      <button class="strip-action" id="btn-back-to-top" data-i18n="backToTop" hidden>回顶部</button>
+      <button class="strip-action" id="btn-wallhaven-more" data-i18n="moreWallhaven" hidden>更多壁纸</button>
+      <span class="strip-action" id="btn-refresh" data-i18n="refresh">刷新</span>
+      <span class="strip-action" id="btn-settings" data-i18n="settings">设置</span>
+    </footer>
+  </div>
+
+  <main id="grid"></main>
+  <div id="empty-state"><span data-i18n="nothing">这一版没有内容</span></div>
+  <div id="fatal"><strong data-i18n="bootFailed">启动失败</strong><span id="fatal-detail"></span></div>
+
+  <section id="detail" aria-hidden="true">
+    <div id="detail-visual"><img id="detail-img" alt=""></div>
+    <div id="detail-veil"></div>
+    <div class="detail-chrome">
+      <div class="detail-top">
+        <span id="detail-index">01 / 000</span>
+        <span id="btn-close" data-i18n="close">关闭</span>
+      </div>
+      <div class="detail-copy">
+        <div id="detail-source">SOURCE</div>
+        <h2 id="detail-title">TITLE</h2>
+        <div id="detail-author"></div>
+        <div id="detail-tags"></div>
+      </div>
+      <div class="detail-side">
+        <span id="btn-fav" data-i18n="save">收藏</span>
+        <span id="btn-save" data-i18n="saveImageAs">导出原图</span>
+        <span id="btn-source" data-i18n="sourceLink">来源 ↗</span>
+        <span id="btn-lock">锁屏 / 关</span>
+        <span id="btn-monitor">显示器 / 全部</span>
+      </div>
+      <div id="mode-scale"></div>
+      <div id="apply-bar"><span data-i18n="apply">应用到桌面</span><span id="apply-arrow">↗</span></div>
+      <div id="receipt"></div>
+    </div>
+  </section>
+
+  <section id="settings" aria-hidden="true">
+    <div class="settings-inner">
+      <div class="settings-head">
+        <h2 data-i18n="settings">设置</h2>
+        <span id="btn-settings-close" data-i18n="close">关闭</span>
+      </div>
+      <div class="settings-scroll">
+
+        <div class="settings-section">
+          <h3 data-i18n="language">语言</h3>
+          <div class="language-row">
+            <span class="language-word is-active" data-lang="zh">中文</span>
+            <span class="language-word" data-lang="en">ENGLISH</span>
+            <span class="language-word" data-lang="ja">日本語</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 data-i18n="windowMode">显示模式</h3>
+          <div class="language-row">
+            <span class="mode-word" data-mode="window" data-i18n="window">窗口</span>
+            <span class="mode-word" data-mode="immersive" data-i18n="immersive">全屏</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 data-i18n="onlineSources">在线图源</h3>
+          <div id="sources-report"></div>
+        </div>
+
+        <div class="settings-section">
+          <h3 data-i18n="credentialsTitle">凭据</h3>
+          <p class="settings-note" data-i18n="credNote">留空即为关闭。填入后刷新即启用对应图源，凭据只保存在本机。</p>
+          <input class="cred" id="cred-unsplash" type="password" data-i18n-ph="unsplashKey" placeholder="UNSPLASH ACCESS KEY">
+          <input class="cred" id="cred-pexels" type="password" data-i18n-ph="pexelsKey" placeholder="PEXELS API KEY">
+          <div class="settings-action" id="btn-save-cred" data-i18n="saveCredentials">保存凭据</div>
+        </div>
+
+        <div class="settings-section">
+          <h3 data-i18n="localLibrary">本地图库</h3>
+          <div id="folder-list"></div>
+          <div class="settings-action" id="btn-add-folder" data-i18n="addLocalFolder">添加本地文件夹</div>
+        </div>
+
+        <div class="settings-section">
+          <h3 data-i18n="desktop">桌面</h3>
+          <div class="settings-action" id="btn-autostart">开机自启 / 关</div>
+          <div class="settings-info" id="cache-info">CACHE —</div>
+          <div class="settings-action" id="btn-cache-clear" data-i18n="clearCache">清理缓存</div>
+          <div class="settings-info" id="lock-probe">锁屏 / 检测中</div>
+        </div>
+
+        <div class="settings-section">
+          <h3 data-i18n="keyboard">键盘</h3>
+          <div class="key-row"><span>CTRL ALT W</span><span data-i18n="keyShow">显示 / 隐藏</span></div>
+          <div class="key-row"><span>CTRL ALT M</span><span data-i18n="keyMode">窗口 / 全屏</span></div>
+          <div class="key-row"><span>CTRL ALT ← →</span><span data-i18n="keyStep">上一张 / 下一张</span></div>
+          <div class="key-row"><span>CTRL ALT S</span><span data-i18n="keyFav">收藏当前</span></div>
+          <div class="key-row"><span>/</span><span data-i18n="keySearch">搜索</span></div>
+          <div class="key-row"><span>↑ ↓ / ENTER</span><span data-i18n="keySuggest">搜索联想 / 采纳</span></div>
+          <div class="key-row"><span>C</span><span data-i18n="keyClear">清空筛选</span></div>
+          <div class="key-row"><span>F</span><span data-i18n="keyMode">窗口 / 全屏</span></div>
+          <div class="key-row"><span>D</span><span data-i18n="keyExport">导出原图</span></div>
+          <div class="key-row"><span>ESC</span><span data-i18n="keyEsc">收起 / 隐藏</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast"></div>
+</div>
+
+<script src="search.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

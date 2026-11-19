@@ -1,0 +1,804 @@
+'use strict';
+const {
+  app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage,
+  protocol, screen, shell, dialog, session
+} = require('electron');
+const path = require('node:path');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
+const zlib = require('node:zlib');
+const { Store } = require('./core/store');
+const providers = require('./core/providers');
+const wallpaper = require('./core/wallpaper');
+const { download } = require('./core/fetch');
+
+const ROOT = __dirname;
+const IN_ASAR = ROOT.includes('app.asar');
+// Portable build: app.asar is read-only, so all writable state lives beside
+// the runtime, not inside the archive. WSP_BASE is set by 启动.cmd.
+const BASE = process.env.WSP_BASE
+  ? path.resolve(process.env.WSP_BASE)
+  : (IN_ASAR ? path.resolve(ROOT, '..', '..', '..') : ROOT);
+const DATA = path.join(BASE, 'data');
+const CACHE = path.join(BASE, 'cache');
+
+const SELFTEST = Boolean(
+  process.env.WS_SHOT === '1' || process.env.WS_SELFTEST === '1' ||
+  process.env.WS_SEARCH || process.env.WS_MODE
+);
+// Self-check runs coexist with a user-launched instance: isolate BOTH the
+// Electron userData (single-instance lock / Chromium cache) AND the app state,
+// so a probe never reads or overwrites the user's filters and window bounds.
+if (SELFTEST) app.setPath('userData', path.join(DATA, 'selftest-profile'));
+const STATE_DIR = SELFTEST ? path.join(DATA, 'selftest-state') : DATA;
+fs.mkdirSync(STATE_DIR, { recursive: true });
+const store = new Store(STATE_DIR);
+fs.mkdirSync(CACHE, { recursive: true });
+app.isQuitting = false;
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'wsp', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
+]);
+
+let win = null;
+let tray = null;
+let items = [];
+let sourcesState = [];
+let wallhavenWarmupTimer = null, wallhavenPending = null;
+let sourcesRevision = 0;
+const WALLHAVEN_WARM_TARGET = 360;
+const WALLHAVEN_WARM_MAX_PAGE = 18;
+let lastAppliedId = null;
+let applying = false;
+let rebuilding = false;
+let windowMode = store.state.settings.windowMode === 'window' ? 'window' : 'immersive';
+// Self-check override: WS_MODE=window proves a standard framed window renders.
+if (process.env.WS_MODE === 'window' || process.env.WS_MODE === 'immersive') {
+  windowMode = process.env.WS_MODE;
+}
+
+/* ---------- tiny PNG encoder: no binary assets shipped ---------- */
+function crc32(buf) {
+  const table = [];
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  let crc = 0xFFFFFFFF;
+  for (const b of buf) crc = table[(crc ^ b) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function chunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([len, body, crc]);
+}
+function trayIconPng() {
+  const S = 32, raw = Buffer.alloc(S * (1 + S * 4));
+  for (let y = 0; y < S; y++) {
+    const row = y * (1 + S * 4);
+    raw[row] = 0;
+    for (let x = 0; x < S; x++) {
+      const o = row + 1 + x * 4;
+      const bar = (y >= 8 && y < 12) || (y >= 15 && y < 19) || (y >= 22 && y < 26);
+      const v = bar && x >= 5 && x < 27 ? 255 : 0;
+      raw[o] = v; raw[o + 1] = v; raw[o + 2] = v; raw[o + 3] = 255;
+    }
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(S, 0); ihdr.writeUInt32BE(S, 4);
+  ihdr[8] = 8; ihdr[9] = 6;
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))
+  ]);
+}
+
+/* ---------- current wallpaper as an in-memory data URL for the paper layer ---------- */
+function currentWallpaperDataUrl(preferred) {
+  const transcoded = path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Themes', 'TranscodedWallpaper');
+  const candidates = [preferred, store.state.settings.lastWallpaperPath, transcoded].filter(Boolean);
+  for (const p of candidates) {
+    try {
+      if (!fs.existsSync(p)) continue;
+      let img = nativeImage.createFromPath(p);
+      if (img.isEmpty()) {
+        const hinted = path.join(CACHE, 'paper-hint.jpg');
+        fs.copyFileSync(p, hinted);
+        img = nativeImage.createFromPath(hinted);
+      }
+      if (img.isEmpty()) continue;
+      const w = img.getSize().width;
+      return (w > 1400 ? img.resize({ width: 1400 }) : img).toDataURL();
+    } catch (e) { /* try next candidate */ }
+  }
+  return null;
+}
+
+/* ---------- window: immersive (frameless fullscreen) or standard window ---------- */
+function saveBounds() {
+  if (!win || win.isDestroyed() || windowMode !== 'window') return;
+  try { store.setSettings({ windowBounds: win.getBounds() }); } catch (e) { /* ignore */ }
+}
+
+function createWindow() {
+  const immersive = windowMode !== 'window';
+  const display = screen.getPrimaryDisplay();
+  const saved = store.state.settings.windowBounds;
+  const opts = {
+    // Both modes stay frameless: the integrated editorial surface must not
+    // grow a Windows title bar / menu strip when switching to window mode.
+    frame: false,
+    fullscreen: immersive,
+    resizable: !immersive,
+    backgroundColor: '#000000',
+    show: false,
+    title: 'WALL／SCAPE',
+    webPreferences: {
+      preload: path.join(ROOT, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: true
+    }
+  };
+  if (immersive) {
+    // FULLSCREEN must use the entire display bounds. A hard 1600x1000 cap
+    // left the window at ~70% of a high-DPI screen even with fullscreen:true.
+    const b = display.bounds;
+    opts.x = b.x; opts.y = b.y;
+    opts.width = b.width; opts.height = b.height;
+  } else {
+    opts.width = saved && saved.width ? saved.width : 1440;
+    opts.height = saved && saved.height ? saved.height : 900;
+    opts.minWidth = 960;
+    opts.minHeight = 640;
+    // Never restore a stale position that pins the frameless window to a
+    // corner or off-screen; centre it instead.
+    const wa = display.workArea;
+    const inBounds = saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) &&
+      Number.isFinite(saved.width) && Number.isFinite(saved.height) &&
+      saved.x >= wa.x - 40 && saved.y >= wa.y - 40 &&
+      saved.x + saved.width <= wa.x + wa.width + 80 &&
+      saved.y + saved.height <= wa.y + wa.height + 80;
+    if (inBounds) {
+      opts.x = saved.x; opts.y = saved.y;
+    } else {
+      opts.center = true;
+    }
+  }
+  win = new BrowserWindow(opts);
+  // WINDOW is a uniformly scaled 16:9 copy of the FULLSCREEN stage.
+  if (!immersive) {
+    try { win.setAspectRatio(16 / 9); } catch (e) { /* unsupported */ }
+  }
+  if (SELFTEST) {
+    fs.writeFileSync(path.join(DATA, 'selfcheck-window.json'), JSON.stringify({
+      mode: windowMode, frame: opts.frame, fullscreen: opts.fullscreen,
+      resizable: opts.resizable, width: opts.width, height: opts.height
+    }, null, 2));
+  }
+  win.loadFile(path.join(ROOT, 'renderer', 'index.html'));
+  win.once('ready-to-show', () => {
+    if (windowMode !== 'window') {
+      // Second guard: some Windows/DPI combinations ignore the constructor
+      // flag when an explicit size was supplied.
+      try {
+        const b = screen.getPrimaryDisplay().bounds;
+        win.setFullScreen(true);
+        win.setBounds(b);
+      } catch (e) { /* unsupported */ }
+    }
+    win.show(); win.focus();
+  });
+  win.on('close', e => {
+    if (windowMode === 'window') saveBounds();
+    if (!app.isQuitting && !rebuilding) { e.preventDefault(); win.hide(); }
+  });
+  win.on('moved', saveBounds);
+  // Dragging a frameless edge does not always dispatch a DOM resize event;
+  // push an explicit signal so the 16:9 stage always re-scales in sync.
+  const notifyResize = () => {
+    if (win && !win.isDestroyed()) win.webContents.send('window:resized');
+  };
+  win.on('resized', () => { saveBounds(); notifyResize(); });
+  win.on('maximize', notifyResize);
+  win.on('unmaximize', notifyResize);
+  win.on('restore', notifyResize);
+  win.on('enter-full-screen', notifyResize);
+  win.on('leave-full-screen', notifyResize);
+}
+
+// Electron cannot toggle `frame` on a live BrowserWindow, so switching modes
+// rebuilds the window. Tray, shortcuts and IPC all reference `win` lazily.
+function setWindowMode(mode) {
+  const next = mode === 'window' ? 'window' : 'immersive';
+  if (next === windowMode) return { ok: true, mode: windowMode };
+  saveBounds();
+  windowMode = next;
+  // The renderer is destroyed by the rebuild; park the receipt so the new
+  // window can show it on bootstrap.
+  store.setSettings({
+    windowMode: next,
+    pendingFeedback: next === 'window' ? 'modeWindow' : 'modeFullscreen'
+  });
+  rebuilding = true;
+  const old = win;
+  win = null;
+  try { if (old && !old.isDestroyed()) old.destroy(); } catch (e) { /* ignore */ }
+  createWindow();
+  rebuilding = false;
+  return { ok: true, mode: next };
+}
+
+function showWindow() {
+  if (!win) return;
+  if (!win.isVisible()) win.show();
+  win.focus();
+}
+
+/* ---------- tray + shortcuts ---------- */
+function buildTray() {
+  const png = trayIconPng();
+  try {
+    const assetsDir = path.join(BASE, 'assets');
+    fs.mkdirSync(assetsDir, { recursive: true });
+    fs.writeFileSync(path.join(assetsDir, 'tray.png'), png);
+  } catch (e) { /* icon is generated in memory anyway */ }
+  tray = new Tray(nativeImage.createFromBuffer(png));
+  tray.setToolTip('WALL／SCAPE — 双击显示');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: '显示 / 隐藏', click: () => win && (win.isVisible() ? win.hide() : showWindow()) },
+    { label: '窗口模式 / 沉浸模式', click: () => setWindowMode(windowMode === 'window' ? 'immersive' : 'window') },
+    { type: 'separator' },
+    { label: '下一张', click: () => step(1) },
+    { label: '上一张', click: () => step(-1) },
+    { label: '收藏当前', click: () => favoriteCurrent() },
+    { type: 'separator' },
+    { label: '退出', click: () => { app.isQuitting = true; app.quit(); } }
+  ]));
+  tray.on('double-click', () => showWindow());
+}
+
+function registerShortcuts() {
+  const pairs = [
+    ['CommandOrControl+Alt+W', () => win && (win.isVisible() ? win.hide() : showWindow())],
+    ['CommandOrControl+Alt+M', () => setWindowMode(windowMode === 'window' ? 'immersive' : 'window')],
+    ['CommandOrControl+Alt+Right', () => step(1)],
+    ['CommandOrControl+Alt+Left', () => step(-1)],
+    ['CommandOrControl+Alt+S', () => favoriteCurrent()]
+  ];
+  for (const [acc, fn] of pairs) {
+    try { globalShortcut.register(acc, fn); } catch (e) { /* occupied */ }
+  }
+}
+
+/* ---------- image materialisation ---------- */
+const imageDownloads = new Map();
+
+function downloadImage(url, dest) {
+  if (!imageDownloads.has(dest)) {
+    const browserSession = win?.webContents.session || session.defaultSession;
+    const pending = download(url, dest, (input, options) => browserSession.fetch(input, options))
+      .finally(() => imageDownloads.delete(dest));
+    imageDownloads.set(dest, pending);
+  }
+  return imageDownloads.get(dest);
+}
+
+function extFor(url) {
+  const m = String(url).split('?')[0].match(/\.(jpe?g|png|webp|bmp)$/i);
+  return m ? (m[1].toLowerCase() === 'jpeg' ? '.jpg' : '.' + m[1].toLowerCase()) : '.jpg';
+}
+
+async function ensureLocal(item) {
+  let source = null;
+  if (item.localPath && fs.existsSync(item.localPath)) {
+    source = item.localPath;
+  } else {
+    const url = item.fullUrl;
+    if (url.startsWith('wsp://local/')) {
+      const p = decodeURIComponent(new URL(url).pathname).replace(/^\//, '');
+      if (!fs.existsSync(p)) throw new Error('local file missing: ' + p);
+      source = p;
+    } else {
+      const hash = crypto.createHash('sha1').update(url).digest('hex').slice(0, 18);
+      const ext = item.ext || extFor(url);
+      const dest = path.join(CACHE, hash + ext);
+      if (!fs.existsSync(dest)) await downloadImage(url, dest);
+      source = dest;
+    }
+  }
+
+  // Content/extension mismatches (WebP or PNG bytes saved as .jpg) and a
+  // partially downloaded file are the main causes of a failing first apply.
+  // Validate the bytes really decode, then hand Windows ONE canonical PNG.
+  let img = null;
+  try { img = nativeImage.createFromPath(source); } catch (e) { /* invalid */ }
+  if (!img || img.isEmpty()) {
+    if (!item.localPath) { try { fs.unlinkSync(source); } catch (e) { /* ignore */ } }
+    throw new Error('image is not decodable (incomplete download or unsupported format)');
+  }
+  const key = crypto.createHash('sha1').update(source).digest('hex').slice(0, 18);
+  const normalized = path.join(CACHE, 'applied-' + key + '.png');
+  if (!fs.existsSync(normalized)) fs.writeFileSync(normalized, img.toPNG());
+  return normalized;
+}
+
+function cacheStats() {
+  let bytes = 0, count = 0;
+  for (const f of fs.readdirSync(CACHE)) {
+    try {
+      const st = fs.statSync(path.join(CACHE, f));
+      if (st.isFile()) { bytes += st.size; count++; }
+    } catch (e) { /* file vanished */ }
+  }
+  return { bytes, count };
+}
+
+/* ---------- apply ---------- */
+async function applyItem(item, opts = {}) {
+  const style = opts.style || store.state.settings.style || 'fill';
+  let local;
+  try {
+    local = await ensureLocal(item);
+  } catch (e) {
+    return { ok: false, stage: 'download', code: e.code, error: String(e.message || e), item: { id: item.id, title: item.title } };
+  }
+  const args = {
+    image: local, style,
+    monitorIndex: opts.monitorIndex == null ? -1 : opts.monitorIndex
+  };
+  let receipt = await wallpaper.run('apply', args);
+  let attempts = 1;
+  if (!receipt.ok) {
+    // One clean retry: rebuild the canonical PNG and call the engine again.
+    // Covers a cold PowerShell/Add-Type compile or a locked TranscodedWallpaper.
+    attempts = 2;
+    try { fs.unlinkSync(local); } catch (e) { /* ignore */ }
+    try {
+      local = await ensureLocal(item);
+      receipt = await wallpaper.run('apply', Object.assign({}, args, { image: local }));
+    } catch (e) {
+      return { ok: false, stage: 'download', code: e.code, error: String(e.message || e), attempts, item };
+    }
+  }
+  if (!receipt.ok) {
+    return { ok: false, stage: 'engine', error: receipt.error, receipt, attempts, item };
+  }
+
+  const verification = await wallpaper.run('status');
+  let lock = null;
+  if (opts.syncLock) lock = await wallpaper.run('lock', { image: local });
+
+  store.pushHistory(item);
+  store.setSettings({ style, lastWallpaper: item.id, lastWallpaperPath: local });
+  lastAppliedId = item.id;
+  const background = currentWallpaperDataUrl(local);
+  if (win) win.webContents.send('wallpaper:changed', { item, local, style, verification, background, history: store.state.history });
+  return { ok: true, item, style, local, receipt, verification, lock, background, attempts };
+}
+
+async function step(delta) {
+  if (applying || !items.length) return;
+  const at = items.findIndex(i => i.id === lastAppliedId);
+  const next = ((at < 0 ? 0 : at + delta) + items.length) % items.length;
+  applying = true;
+  try { await applyItem(items[next]); } finally { applying = false; }
+}
+
+async function favoriteCurrent() {
+  const item = items.find(entry => entry.id === lastAppliedId) ||
+    store.state.history.find(entry => entry.id === lastAppliedId) || items[0];
+  if (!item) return;
+  const r = store.toggleFavorite(item);
+  if (win) win.webContents.send('tray:command', { type: 'favorite', id: item.id, favorited: r.favorited, favorites: r.favorites });
+}
+
+/* ---------- data ---------- */
+async function loadSources() {
+  const revision = ++sourcesRevision;
+  const r = await providers.loadAll({
+    cacheDir: DATA,
+    credentials: store.state.credentials,
+    folders: store.state.customFolders,
+    onWallhaven: ({ items: fresh, status }) => {
+      if (revision !== sourcesRevision) return;
+      items = withWallhavenItems(items, fresh);
+      sourcesState = sourcesState.some(source => source.id === 'wallhaven')
+        ? sourcesState.map(source => source.id === 'wallhaven' ? status : source)
+        : sourcesState.concat(status);
+      if (win && !win.isDestroyed()) win.webContents.send('wallhaven:updated', { added: fresh, status, replace: true });
+      scheduleWallhavenWarmup();
+    }
+  });
+  if (revision !== sourcesRevision) return { items, sources: sourcesState };
+  const current = wallhavenSource();
+  items = withWallhavenItems(r.items, items.filter(item => item.source === 'wallhaven'));
+  sourcesState = r.sources.map(source => source.id === 'wallhaven' ? current : source);
+  scheduleWallhavenWarmup();
+  return { items, sources: sourcesState };
+}
+
+function withWallhavenItems(catalog, wallhavenItems) {
+  return catalog.filter(item => item.source === 'bing').concat(wallhavenItems,
+    catalog.filter(item => item.source !== 'bing' && item.source !== 'wallhaven'));
+}
+
+function wallhavenSource() {
+  return sourcesState.find(entry => entry.id === 'wallhaven');
+}
+
+function appendWallhavenPage(source) {
+  if (wallhavenPending?.source === source) return wallhavenPending.promise;
+  const promise = providers.wallhavenPage({ page: source.nextPage }).then(result => {
+    if (!sourcesState.includes(source)) return null;
+    const ids = new Set(items.map(item => item.id));
+    const added = result.items.filter(item => !ids.has(item.id) && ids.add(item.id));
+    items = items.concat(added);
+    const status = { ...source, nextPage: result.nextPage, total: result.total || source.total,
+      count: source.count + added.length, ok: true, error: null, stale: false };
+    sourcesState = sourcesState.map(entry => entry === source ? status : entry);
+    providers.saveWallhavenIndex(DATA, items.filter(item => item.source === 'wallhaven'), status);
+    return { added, status };
+  }).finally(() => { if (wallhavenPending?.promise === promise) wallhavenPending = null; });
+  wallhavenPending = { source, promise };
+  return promise;
+}
+
+function scheduleWallhavenWarmup(attempt = 0, delay = 1800) {
+  const source = wallhavenSource();
+  if (wallhavenWarmupTimer || !source?.ok || !source.nextPage ||
+      source.count >= WALLHAVEN_WARM_TARGET || source.nextPage > WALLHAVEN_WARM_MAX_PAGE) return;
+  wallhavenWarmupTimer = setTimeout(async () => {
+    wallhavenWarmupTimer = null;
+    if (app.isQuitting) return;
+    if (wallhavenSource() !== source) { scheduleWallhavenWarmup(); return; }
+    try {
+      const update = await appendWallhavenPage(source);
+      if (update && win && !win.isDestroyed()) win.webContents.send('wallhaven:updated', update);
+      scheduleWallhavenWarmup();
+    } catch (error) {
+      if (attempt < 2 && (error.code === 'ECONNRESET' || /^timeout|^HTTP 5/.test(error.message))) {
+        scheduleWallhavenWarmup(attempt + 1, (attempt + 1) * 6000);
+      } else console.log('[wallhaven] background paging paused: ' + (error.message || error));
+    }
+  }, delay);
+}
+
+function bootstrapPayload(status) {
+  const settings = Object.assign({}, store.state.settings, { windowMode });
+  try { settings.autoStart = app.getLoginItemSettings().openAtLogin; } catch (e) { /* unsupported */ }
+  return {
+    items, sources: sourcesState,
+    settings,
+    favorites: store.state.favorites,
+    history: store.state.history,
+    credentials: Object.fromEntries(Object.entries(store.state.credentials).map(([k, v]) => [k, Boolean(v)])),
+    folders: store.state.customFolders,
+    status,
+    background: currentWallpaperDataUrl(),
+    runtime: { electron: process.versions.electron || 'unknown', node: process.versions.node }
+  };
+}
+
+/* ---------- IPC ---------- */
+ipcMain.handle('app:bootstrap', async () => {
+  // Instant first paint from the local index. Network work is pushed later,
+  // so a slow or offline source can no longer leave the window blank.
+  const cached = providers.loadCached(DATA, store.state.credentials, store.state.customFolders);
+  items = cached.items;
+  sourcesState = cached.sources;
+  const payload = bootstrapPayload(null);
+  payload.loading = true;
+
+  (async () => {
+    const loaded = loadSources();
+    let status = null;
+    try { status = await wallpaper.run('status'); } catch (e) { /* ignore */ }
+    const push = extra => {
+      if (win && !win.isDestroyed()) win.webContents.send('bootstrap:ready', extra);
+    };
+    push(Object.assign(bootstrapPayload(status), { loading: true }));
+    try {
+      await loaded;
+      push(bootstrapPayload(status));
+    } catch (e) {
+      console.log('[bootstrap] online refresh failed: ' + (e.message || e));
+      push(Object.assign(bootstrapPayload(status), { loading: false }));
+    }
+  })();
+
+  return payload;
+});
+
+ipcMain.handle('sources:refresh', () => loadSources());
+ipcMain.handle('sources:search', (_e, { query, genre, filters } = {}) =>
+  providers.searchOnline(store.state.credentials, query, 'all', genre, filters));
+
+ipcMain.handle('sources:wallhavenMore', async (_e, { query, page, genre, filters } = {}) => {
+  const term = typeof query === 'string' ? query.trim().slice(0, 120) : '';
+  if (term || (genre && genre !== 'all') || (filters?.ratio && filters.ratio !== 'any') ||
+      (filters?.resolution && filters.resolution !== 'any')) {
+    return providers.wallhavenPage({ ...filters, query: term, page, genre });
+  }
+  const source = wallhavenSource();
+  if (!source?.nextPage || source.nextPage !== page) return { items, sources: sourcesState };
+  await appendWallhavenPage(source);
+  scheduleWallhavenWarmup();
+  return { items, sources: sourcesState };
+});
+
+ipcMain.handle('item:apply', async (_e, payload) => {
+  if (applying) return { ok: false, error: '另一个应用操作正在进行' };
+  applying = true;
+  try { return await applyItem(payload.item, payload); } finally { applying = false; }
+});
+
+ipcMain.handle('item:saveAs', async (_e, item) => {
+  let src;
+  try { src = await ensureLocal(item); }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+  const ext = path.extname(src) || '.jpg';
+  const safe = String(item.title || 'wallpaper').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+  let defaultPath = safe + ext;
+  try { defaultPath = path.join(app.getPath('pictures'), safe + ext); } catch (e) { /* fallback */ }
+  const r = await dialog.showSaveDialog(win, {
+    defaultPath,
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'bmp'] }]
+  });
+  if (r.canceled || !r.filePath) return { ok: false, canceled: true };
+  fs.copyFileSync(src, r.filePath);
+  return { ok: true, path: r.filePath, bytes: fs.statSync(r.filePath).size };
+});
+
+ipcMain.handle('item:favorite', (_e, item) => store.toggleFavorite(item));
+ipcMain.handle('settings:set', (_e, patch) => store.setSettings(patch));
+ipcMain.handle('window:setMode', (_e, { mode } = {}) => setWindowMode(mode));
+ipcMain.handle('window:toggleMode', () => setWindowMode(windowMode === 'window' ? 'immersive' : 'window'));
+ipcMain.handle('window:mode', () => ({ mode: windowMode }));
+
+ipcMain.handle('settings:autostart', (_e, { enabled } = {}) => {
+  const on = Boolean(enabled);
+  try {
+    app.setLoginItemSettings({ openAtLogin: on, path: process.execPath, args: [ROOT] });
+  } catch (e) {
+    return { ok: false, enabled: on, actual: false, error: e.message };
+  }
+  store.setSettings({ autoStart: on });
+  let actual = false;
+  try { actual = app.getLoginItemSettings().openAtLogin; } catch (e) { /* unsupported */ }
+  return { ok: true, enabled: on, actual };
+});
+
+ipcMain.handle('cache:info', () => Object.assign({ ok: true }, cacheStats()));
+ipcMain.handle('cache:clear', () => {
+  let removed = 0;
+  for (const f of fs.readdirSync(CACHE)) {
+    const p = path.join(CACHE, f);
+    try { if (fs.statSync(p).isFile()) { fs.unlinkSync(p); removed++; } } catch (e) { /* in use */ }
+  }
+  return Object.assign({ ok: true, removed }, cacheStats());
+});
+
+ipcMain.handle('engine:lockProbe', () => wallpaper.run('probe'));
+
+ipcMain.handle('credentials:set', async (_e, patch) => {
+  store.setCredentials(patch);
+  const r = await loadSources();
+  return { ok: true, sources: r.sources, items: r.items,
+    credentials: Object.fromEntries(Object.entries(store.state.credentials).map(([key, value]) => [key, Boolean(value)])) };
+});
+
+ipcMain.handle('folders:pick', async () => {
+  const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
+  if (r.canceled) return { ok: false, folders: store.state.customFolders };
+  const next = [...new Set([...store.state.customFolders, ...r.filePaths])];
+  store.setFolders(next);
+  const loaded = await loadSources();
+  return { ok: true, folders: next, items: loaded.items, sources: loaded.sources };
+});
+
+ipcMain.handle('status:read', () => wallpaper.run('status'));
+ipcMain.handle('shell:open', (_e, url) => {
+  if (/^https?:\/\//.test(url)) shell.openExternal(url);
+  return true;
+});
+/* Native drag fallback. app-region hit-testing inside a transformed stage is
+   unreliable, so the masthead drives the frameless window from the main
+   process using real screen coordinates. */
+let dragOrigin = null;
+ipcMain.on('window:dragStart', () => {
+  if (!win || win.isDestroyed() || windowMode !== 'window') return;
+  const b = win.getBounds();
+  const p = screen.getCursorScreenPoint();
+  dragOrigin = { px: p.x, py: p.y, bx: b.x, by: b.y, w: b.width, h: b.height };
+});
+ipcMain.on('window:dragMove', () => {
+  if (!dragOrigin || !win || win.isDestroyed()) return;
+  const p = screen.getCursorScreenPoint();
+  try {
+    win.setBounds({
+      x: dragOrigin.bx + (p.x - dragOrigin.px),
+      y: dragOrigin.by + (p.y - dragOrigin.py),
+      width: dragOrigin.w, height: dragOrigin.h
+    });
+  } catch (e) { dragOrigin = null; }
+});
+ipcMain.on('window:dragEnd', () => { dragOrigin = null; });
+
+ipcMain.handle('window:hide', () => { if (win) win.hide(); return true; });
+ipcMain.handle('window:fullscreen', () => setWindowMode(windowMode === 'window' ? 'immersive' : 'window'));
+ipcMain.handle('window:quit', () => { app.isQuitting = true; app.quit(); return true; });
+
+/* ---------- lifecycle ---------- */
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => showWindow());
+  app.whenReady().then(() => {
+    protocol.handle('wsp', req => {
+      const p = decodeURIComponent(new URL(req.url).pathname).replace(/^\//, '');
+      try {
+        const buf = fs.readFileSync(p);
+        const ext = path.extname(p).toLowerCase();
+        const ct = ext === '.png' ? 'image/png'
+          : ext === '.webp' ? 'image/webp'
+            : ext === '.bmp' ? 'image/bmp' : 'image/jpeg';
+        return new Response(buf, { headers: { 'content-type': ct } });
+      } catch (e) {
+        return new Response('not found', { status: 404 });
+      }
+    });
+    createWindow();
+    buildTray();
+    registerShortcuts();
+
+    // Opt-in self-check hooks. Normal launches never run them.
+    if (process.env.WS_SHOT === '1' || process.env.WS_SELFTEST === '1' ||
+        process.env.WS_SEARCH || process.env.WS_DRAG === '1') {
+      win.webContents.once('did-finish-load', () => {
+        const dp = screen.getPrimaryDisplay();
+        console.log('[selfcheck] display=' + JSON.stringify({
+          bounds: dp.bounds, workArea: dp.workArea, scaleFactor: dp.scaleFactor
+        }));
+        console.log('[selfcheck] windowMode=' + windowMode +
+          ' fullscreen=' + win.isFullScreen() +
+          ' bounds=' + JSON.stringify(win.getBounds()));
+        if (process.env.WS_DRAG === '1') {
+          setTimeout(() => {
+            // The probe must actually receive the OS mouse events.
+            win.show(); win.focus(); win.moveTop();
+            try { win.setAlwaysOnTop(true); } catch (e) { /* ignore */ }
+            const before = win.getBounds();
+            const nh = win.getNativeWindowHandle();
+            before.hwnd = nh ? Number(nh.length >= 8 ? nh.readBigUInt64LE(0) : nh.readUInt32LE(0)) : null;
+            fs.writeFileSync(path.join(DATA, 'selfcheck-drag-before.json'), JSON.stringify(before));
+            console.log('[selfcheck] drag before=' + JSON.stringify(before));
+          }, 4500);
+          setTimeout(() => {
+            const after = win.getBounds();
+            fs.writeFileSync(path.join(DATA, 'selfcheck-drag-after.json'), JSON.stringify(after));
+            console.log('[selfcheck] drag after=' + JSON.stringify(after));
+            app.isQuitting = true; app.quit();
+          }, 11000);
+        }
+        if (process.env.WS_RESIZE === '1') {
+          setTimeout(() => {
+            const before = win.getBounds();
+            try {
+              win.setBounds({ x: before.x, y: before.y, width: 1200, height: 675 });
+              console.log('[selfcheck] resize ' + JSON.stringify(before) + ' -> ' + JSON.stringify(win.getBounds()));
+            } catch (e) { console.log('[selfcheck] resize failed ' + e.message); }
+          }, 5000);
+        }
+        if (process.env.WS_LANG) {
+          setTimeout(() => {
+            win.webContents.executeJavaScript(`setLanguage(${JSON.stringify(process.env.WS_LANG)})`)
+              .then(() => console.log('[selfcheck] language=' + process.env.WS_LANG))
+              .catch(e => console.log('[selfcheck] language failed: ' + e.message));
+          }, 3500);
+        }
+        if (process.env.WS_SEARCH) {
+          setTimeout(() => {
+            const q = process.env.WS_SEARCH;
+            win.webContents.executeJavaScript(`(() => {
+              const el = document.getElementById('search');
+              el.value = ${JSON.stringify(q)};
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              return 'injected';
+            })()`).then(() => console.log('[selfcheck] search injected: ' + q))
+              .catch(e => console.log('[selfcheck] search inject failed: ' + e.message));
+          }, 4000);
+        }
+        if (process.env.WS_SHOT === '1') {
+          setTimeout(() => {
+            win.webContents.executeJavaScript(`(() => {
+              const cards = [...document.querySelectorAll('.card')];
+              const imgs = cards.map(c => {
+                const i = c.querySelector('img');
+                return { src: i && i.src, state: i && i.dataset.state, loaded: !!(i && i.classList.contains('is-loaded')), complete: !!(i && i.complete), nw: i && i.naturalWidth };
+              });
+              const stageEl = document.getElementById('stage');
+              const searchEl = document.getElementById('search');
+              const refreshEl = document.getElementById('btn-refresh');
+              const logoEl = document.getElementById('logotype');
+              const mastheadEl = document.getElementById('masthead');
+              const curtainEl = document.getElementById('boot-curtain');
+              refreshEl.dispatchEvent(new PointerEvent('pointerdown', {
+                clientX: 120, clientY: 120, bubbles: true
+              }));
+              logoEl.dispatchEvent(new MouseEvent('mousemove', {
+                clientX: 300, clientY: 90, bubbles: true
+              }));
+              const te = document.getElementById('toast');
+              te.textContent = '已关闭';
+              te.classList.add('is-on');
+              te.style.transition = 'none';
+              te.style.opacity = '1';
+              te.style.transform = 'none';
+              return JSON.stringify({
+                cards: cards.length,
+                loaded: imgs.filter(x => x.loaded).length,
+                broken: cards.filter(c => c.classList.contains('is-broken')).length,
+                gridTop: getComputedStyle(document.documentElement).getPropertyValue('--grid-top'),
+                stageScale: getComputedStyle(document.documentElement).getPropertyValue('--stage-s'),
+                stageTransform: getComputedStyle(stageEl).transform,
+                stageUserSelect: getComputedStyle(stageEl).userSelect,
+                searchUserSelect: getComputedStyle(searchEl).userSelect,
+                modeWords: document.querySelectorAll('.mode-word').length,
+                resolutionWords: document.querySelectorAll('#resolution-block .filter-word').length,
+                suggestionsOpen: document.getElementById('suggestions').classList.contains('is-on'),
+                suggestionCount: document.querySelectorAll('#suggestions .suggestion').length,
+                frameDragRegion: getComputedStyle(document.getElementById('frame-drag-top')).webkitAppRegion,
+                inkAfterClick: document.querySelectorAll('.ink').length,
+                pressedAfterClick: document.querySelectorAll('.is-pressed').length,
+                toastTop: getComputedStyle(document.getElementById('toast')).top,
+                toastRight: getComputedStyle(document.getElementById('toast')).right,
+                toastBlend: getComputedStyle(document.getElementById('toast')).mixBlendMode,
+                toastBg: getComputedStyle(document.getElementById('toast')).backgroundColor,
+                mastheadRegion: getComputedStyle(mastheadEl).webkitAppRegion,
+                logoShift: getComputedStyle(logoEl).getPropertyValue('--logo-shift'),
+                curtainClip: curtainEl ? getComputedStyle(curtainEl).clipPath : 'removed',
+                searchValue: searchEl.value,
+                searchResult: document.getElementById('search-result').textContent,
+                first: imgs.slice(0, 5)
+              });
+            })()`).then(d => {
+              fs.writeFileSync(path.join(DATA, 'selfcheck-dom.json'), d);
+              console.log('[selfcheck] DOM ' + d.slice(0, 1200));
+              // Chain the capture, and let Chromium commit a frame first.
+              return new Promise(r => setTimeout(r, 320))
+                .then(() => win.webContents.capturePage());
+            }).then(img => {
+              fs.writeFileSync(path.join(DATA, 'selfcheck.png'), img.toPNG());
+              console.log('[selfcheck] screenshot written');
+            }).catch(e => console.log('[selfcheck] shot failed: ' + e.message));
+          }, 9000);
+        }
+        if (process.env.WS_SHOT === '1' && process.env.WS_SELFTEST !== '1') {
+          setTimeout(() => { app.isQuitting = true; app.quit(); }, 12500);
+        }
+        if (process.env.WS_SELFTEST === '1') {
+          setTimeout(async () => {
+            try {
+              if (!items.length) await loadSources();
+              const item = items.find(i => i.source === 'bing') || items[0];
+              const r = item ? await applyItem(item, { style: 'fill' }) : { ok: false, error: 'no items' };
+              fs.writeFileSync(path.join(DATA, 'selfcheck-receipt.json'), JSON.stringify(r, null, 2));
+              console.log('[selfcheck] apply ok=' + r.ok + ' ' + (r.error || ''));
+            } catch (e) {
+              console.log('[selfcheck] apply threw: ' + e.message);
+            }
+          }, 11000);
+          setTimeout(() => { app.isQuitting = true; app.quit(); }, 15000);
+        }
+      });
+    }
+  });
+}
+
+app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('window-all-closed', e => { if (!app.isQuitting) e.preventDefault(); });

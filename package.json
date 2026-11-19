@@ -1,0 +1,10 @@
+{
+  "name": "wallscape",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Editorial full-screen wallpaper switcher for Windows",
+  "main": "main.js",
+  "scripts": {
+    "start": "runtime\\electron.exe ."
+  }
+}
