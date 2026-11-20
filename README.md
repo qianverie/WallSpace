@@ -40,7 +40,7 @@
 
 ### 方式一：下载免安装便携包（推荐普通用户）
 
-1. 前往本仓库的 **[Releases](https://github.com/qian13586-crypto/WallSpace/releases)** 页面下载最新版 `Wallscape-portable-*.zip`。
+1. 前往本仓库的 **[Releases](https://github.com/qianverie/WallSpace/releases)** 页面下载最新版 `Wallscape-portable-*.zip`。
 2. 解压到任意目录（无需安装 Node.js 或 npm）。
 3. 双击 **`启动.vbs`**（无黑框）或 **`启动.cmd`** 即可启动。
 
@@ -48,7 +48,7 @@
 
 1. 克隆仓库：
    ```bash
-   git clone https://github.com/qian13586-crypto/WallSpace.git
+   git clone https://github.com/qianverie/WallSpace.git
    cd WallSpace
    ```
 2. 下载 [Electron v45.2.3 Windows x64 运行时](https://github.com/electron/electron/releases/tag/v45.2.3)（`electron-v45.2.3-win32-x64.zip`），解压至项目根目录下的 `runtime/`，确保存在 `runtime/electron.exe`。

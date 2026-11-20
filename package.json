@@ -5,9 +5,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/qian13586-crypto/WallSpace.git"
+    "url": "https://github.com/qianverie/WallSpace.git"
   },
-  "homepage": "https://github.com/qian13586-crypto/WallSpace#readme",
+  "homepage": "https://github.com/qianverie/WallSpace#readme",
   "main": "main.js",
   "scripts": {
     "start": "runtime\\electron.exe ."
