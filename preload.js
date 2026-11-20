@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('wsp', {
   bootstrap: () => ipcRenderer.invoke('app:bootstrap'),
   refreshSources: () => ipcRenderer.invoke('sources:refresh'),
   searchSources: (query, genre, filters) => ipcRenderer.invoke('sources:search', { query, genre, filters }),
+  aiSearch: (prompt, context) => ipcRenderer.invoke('ai:search', { prompt, context }),
+  aiTest: draft => ipcRenderer.invoke('ai:test', draft),
   wallhavenMore: (query, page, genre, filters) => ipcRenderer.invoke('sources:wallhavenMore', { query, page, genre, filters }),
   apply: payload => ipcRenderer.invoke('item:apply', payload),
   undoWallpaper: () => ipcRenderer.invoke('desktop:undo'),

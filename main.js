@@ -12,6 +12,7 @@ const providers = require('./core/providers');
 const wallpaper = require('./core/wallpaper');
 const { createDesktop } = require('./core/desktop');
 const { createMotion } = require('./core/motion');
+const aiSearch = require('./core/ai-search');
 const { download } = require('./core/fetch');
 
 const ROOT = __dirname;
@@ -91,9 +92,38 @@ function saveBounds() {
   try { store.setSettings({ windowBounds: win.getBounds() }); } catch (e) { /* ignore */ }
 }
 
+function primaryDisplayMetrics() {
+  const display = screen.getPrimaryDisplay();
+  const b = display.bounds;
+  const wa = display.workArea;
+  const sf = display.scaleFactor || 1;
+  const rawAspect = b.height > 0 ? b.width / b.height : 16 / 9;
+  const aspect = Math.max(0.5, Math.min(3.6, rawAspect));
+  const maxW = Math.max(900, Math.round(wa.width * 0.78));
+  const maxH = Math.max(600, Math.round(wa.height * 0.78));
+  let width = maxW;
+  let height = Math.round(width / aspect);
+  if (height > maxH) {
+    height = maxH;
+    width = Math.round(height * aspect);
+  }
+  return {
+    display,
+    bounds: b,
+    workArea: wa,
+    scaleFactor: sf,
+    aspect,
+    physicalWidth: Math.round(b.width * sf),
+    physicalHeight: Math.round(b.height * sf),
+    defaultWidth: width,
+    defaultHeight: height
+  };
+}
+
 function createWindow() {
   const immersive = windowMode !== 'window';
-  const display = screen.getPrimaryDisplay();
+  const metrics = primaryDisplayMetrics();
+  const { display, bounds: b, workArea: wa, aspect } = metrics;
   const saved = store.state.settings.windowBounds;
   const opts = {
     // Both modes stay frameless: the integrated editorial surface must not
@@ -115,22 +145,23 @@ function createWindow() {
   if (immersive) {
     // FULLSCREEN must use the entire display bounds. A hard 1600x1000 cap
     // left the window at ~70% of a high-DPI screen even with fullscreen:true.
-    const b = display.bounds;
     opts.x = b.x; opts.y = b.y;
     opts.width = b.width; opts.height = b.height;
   } else {
-    opts.width = saved && saved.width ? saved.width : 1440;
-    opts.height = saved && saved.height ? saved.height : 900;
-    opts.minWidth = 960;
-    opts.minHeight = 640;
+    const savedValid = saved && Number.isFinite(saved.width) && Number.isFinite(saved.height) &&
+      saved.width >= 900 && saved.height >= 560;
+    const savedRatio = savedValid ? saved.width / saved.height : 0;
+    const ratioMatches = savedValid && Math.abs(savedRatio - aspect) <= 0.03;
+    opts.width = ratioMatches ? saved.width : metrics.defaultWidth;
+    opts.height = ratioMatches ? saved.height : metrics.defaultHeight;
+    opts.minWidth = Math.min(960, Math.round(600 * aspect));
+    opts.minHeight = Math.min(640, Math.round(opts.minWidth / aspect));
     // Never restore a stale position that pins the frameless window to a
     // corner or off-screen; centre it instead.
-    const wa = display.workArea;
-    const inBounds = saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) &&
-      Number.isFinite(saved.width) && Number.isFinite(saved.height) &&
+    const inBounds = ratioMatches && Number.isFinite(saved.x) && Number.isFinite(saved.y) &&
       saved.x >= wa.x - 40 && saved.y >= wa.y - 40 &&
-      saved.x + saved.width <= wa.x + wa.width + 80 &&
-      saved.y + saved.height <= wa.y + wa.height + 80;
+      saved.x + opts.width <= wa.x + wa.width + 80 &&
+      saved.y + opts.height <= wa.y + wa.height + 80;
     if (inBounds) {
       opts.x = saved.x; opts.y = saved.y;
     } else {
@@ -139,9 +170,9 @@ function createWindow() {
   }
   win = new BrowserWindow(opts);
   win.on('focus', () => refreshDisplayStatus(true));
-  // WINDOW is a uniformly scaled 16:9 copy of the FULLSCREEN stage.
+  // WINDOW is a uniformly scaled copy matching the primary display's real aspect ratio.
   if (!immersive) {
-    try { win.setAspectRatio(16 / 9); } catch (e) { /* unsupported */ }
+    try { win.setAspectRatio(aspect); } catch (e) { /* unsupported */ }
   }
   if (SELFTEST) {
     fs.writeFileSync(path.join(DATA, 'selfcheck-window.json'), JSON.stringify({
@@ -468,6 +499,9 @@ function refreshDisplayStatus(force = false) {
 function onDisplaysChanged() {
   clearTimeout(displayTimer);
   displayTimer = setTimeout(async () => {
+    if (win && !win.isDestroyed() && windowMode === 'window') {
+      try { win.setAspectRatio(primaryDisplayMetrics().aspect); } catch (e) { /* ignore */ }
+    }
     const status = await refreshDisplayStatus(true);
     if (status?.ok && !SELFTEST && Object.keys(store.state.desktop.profiles).length) {
       if (applying) { onDisplaysChanged(); return; }
@@ -563,15 +597,39 @@ function scheduleWallhavenWarmup(attempt = 0, delay = 1800) {
   }, delay);
 }
 
+function publicCredentials() {
+  const c = store.state.credentials || {};
+  return {
+    unsplash: Boolean(c.unsplash),
+    pexels: Boolean(c.pexels),
+    wallhaven: Boolean(c.wallhaven),
+    proxy: Boolean(c.proxy),
+    aiProvider: c.aiProvider === 'gemini' ? 'gemini' : 'openai',
+    aiBaseUrl: String(c.aiBaseUrl || ''),
+    aiModel: String(c.aiModel || ''),
+    aiApiKey: Boolean(c.aiApiKey),
+    serperKey: Boolean(c.serperKey),
+    braveKey: Boolean(c.braveKey)
+  };
+}
+
 function bootstrapPayload() {
   const settings = Object.assign({}, store.state.settings, { windowMode });
   try { settings.autoStart = app.getLoginItemSettings().openAtLogin; } catch (e) { /* unsupported */ }
+  const metrics = primaryDisplayMetrics();
   return {
     items, sources: sourcesState,
     settings,
+    display: {
+      width: metrics.physicalWidth,
+      height: metrics.physicalHeight,
+      logicalWidth: metrics.bounds.width,
+      logicalHeight: metrics.bounds.height,
+      aspect: metrics.aspect
+    },
     favorites: store.state.favorites,
     history: store.state.history,
-    credentials: Object.fromEntries(Object.entries(store.state.credentials).map(([k, v]) => [k, Boolean(v)])),
+    credentials: publicCredentials(),
     folders: store.state.customFolders,
     undoAvailable: Boolean(store.state.desktop.undo),
     background: currentWallpaperDataUrl(),
@@ -695,10 +753,39 @@ ipcMain.handle('cache:clear', () => pruneCaches(0));
 ipcMain.handle('engine:lockProbe', () => wallpaper.run('probe'));
 
 ipcMain.handle('credentials:set', async (_e, patch) => {
-  store.setCredentials(patch);
-  const r = await loadSources();
-  return { ok: true, sources: r.sources, items: r.items,
-    credentials: Object.fromEntries(Object.entries(store.state.credentials).map(([key, value]) => [key, Boolean(value)])) };
+  const safe = patch && typeof patch === 'object' ? patch : {};
+  store.setCredentials(safe);
+  const reloadCatalog = ['unsplash', 'pexels', 'wallhaven', 'proxy'].some(k => Object.hasOwn(safe, k));
+  if (reloadCatalog) {
+    const r = await loadSources();
+    return { ok: true, sources: r.sources, items: r.items, credentials: publicCredentials() };
+  }
+  return { ok: true, credentials: publicCredentials() };
+});
+
+ipcMain.handle('ai:search', async (_e, { prompt, context } = {}) => {
+  const browserSession = win?.webContents.session || session.defaultSession;
+  const fetchFn = (input, options) => browserSession.fetch(input, options);
+  return aiSearch.search({
+    prompt,
+    credentials: store.state.credentials,
+    context: context || {},
+    providers,
+    fetchFn
+  });
+});
+
+ipcMain.handle('ai:test', async (_e, draft = {}) => {
+  const browserSession = win?.webContents.session || session.defaultSession;
+  const fetchFn = (input, options) => browserSession.fetch(input, options);
+  const merged = Object.assign({}, store.state.credentials);
+  if (draft && typeof draft === 'object') {
+    if (draft.aiProvider) merged.aiProvider = draft.aiProvider;
+    if (typeof draft.aiBaseUrl === 'string') merged.aiBaseUrl = draft.aiBaseUrl.trim();
+    if (typeof draft.aiModel === 'string') merged.aiModel = draft.aiModel.trim();
+    if (typeof draft.aiApiKey === 'string' && draft.aiApiKey.trim()) merged.aiApiKey = draft.aiApiKey.trim();
+  }
+  return aiSearch.testConnection(merged, fetchFn);
 });
 
 ipcMain.handle('folders:pick', async () => {

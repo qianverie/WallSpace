@@ -11,7 +11,7 @@ const pad = (n, l = 3) => String(n).padStart(l, '0');
 const ratioOf = (w, h) => {
   if (!w || !h) return null;
   const r = w / h;
-  return r > 2 ? 'ultrawide' : r > 1.6 ? '16:9' : r > 1.25 ? '4:3' : r > .9 ? '1:1' : 'portrait';
+  return r >= 2 ? 'ultrawide' : r >= 1.68 ? '16:9' : r >= 1.54 ? '16:10' : r >= 1.2 ? '4:3' : r >= .9 ? '1:1' : 'portrait';
 };
 
 /* ---------------- i18n ---------------- */
@@ -76,7 +76,17 @@ const I18N = {
     okLabel: '成功', failedLabel: '失败',
     opened: '已展开', closed: '已关闭', settingsOpened: '设置已打开', settingsClosed: '设置已关闭',
     modeWindow: '已切到窗口', modeFullscreen: '已切到全屏', nextItem: '下一张', prevItem: '上一张',
-    unknownSize: '尺寸未标注'
+    unknownSize: '尺寸未标注', hideWindow: '隐藏', clearFiltersAction: '清空 ×',
+    detailPureHint: '按住空格纯净预览 · 0 复位构图', framingHudZoom: '缩放',
+    aiSearchToggle: '✦ AI 全网', aiSearchPlaceholder: '描述想要的画面、风格或色调，回车 AI 全网搜壁纸…',
+    aiExitResults: '退出 AI 结果 ×', aiSearching: 'AI 正在全网搜图…', aiNoResults: '全网未找到匹配的高清壁纸',
+    aiSearchTitle: 'AI 全网搜索', aiSearchNote: '支持任意 OpenAI 兼容接口（DeepSeek / 硅基流动 / OpenRouter / 中转站）或 Google Gemini API，凭据仅保存在本机。',
+    aiBaseUrlPh: 'API BASE URL（留空使用官方默认，如 https://api.deepseek.com/v1）',
+    aiModelPh: 'MODEL（如 deepseek-chat / gpt-4o-mini / gemini-2.5-flash）',
+    aiApiKeyPh: 'AI API KEY', serperKeyPh: 'SERPER API KEY（Google 全网搜图，可选）', braveKeyPh: 'BRAVE SEARCH API KEY（可选）',
+    saveAiConfig: '保存 AI 配置', testAiConnection: '测试 AI 连接',
+    aiSaved: 'AI 配置已保存在本机', aiTesting: '正在测试 AI 连接…',
+    aiTestOk: '连接成功', aiTestFailed: '连接失败', aiFallbackTag: '免 Key 全网聚合', aiModeOn: '已开启 AI 全网搜图', aiModeOff: '已切回常规搜索'
   },
   en: {
     scopeAll: 'ALL', scopeSaved: 'SAVED', scopeHistory: 'HISTORY',
@@ -138,7 +148,17 @@ const I18N = {
     okLabel: 'OK', failedLabel: 'FAILED',
     opened: 'OPENED', closed: 'CLOSED', settingsOpened: 'SETTINGS OPENED', settingsClosed: 'SETTINGS CLOSED',
     modeWindow: 'WINDOW MODE', modeFullscreen: 'FULLSCREEN MODE', nextItem: 'NEXT', prevItem: 'PREVIOUS',
-    unknownSize: 'SIZE UNKNOWN'
+    unknownSize: 'SIZE UNKNOWN', hideWindow: 'HIDE', clearFiltersAction: 'CLEAR ×',
+    detailPureHint: 'HOLD SPACE FOR PURE PREVIEW · 0 RESET', framingHudZoom: 'ZOOM',
+    aiSearchToggle: '✦ AI WEB', aiSearchPlaceholder: 'DESCRIBE SCENE, MOOD OR STYLE — PRESS ENTER FOR AI WEB SEARCH…',
+    aiExitResults: 'EXIT AI RESULTS ×', aiSearching: 'AI SEARCHING THE WEB…', aiNoResults: 'NO MATCHING HD WALLPAPERS FOUND',
+    aiSearchTitle: 'AI WEB SEARCH', aiSearchNote: 'Connect any OpenAI-compatible API (DeepSeek / OpenRouter / Ollama) or Google Gemini API. Keys stay on this machine only.',
+    aiBaseUrlPh: 'API BASE URL (OPTIONAL, e.g. https://api.deepseek.com/v1)',
+    aiModelPh: 'MODEL (e.g. deepseek-chat / gpt-4o-mini / gemini-2.5-flash)',
+    aiApiKeyPh: 'AI API KEY', serperKeyPh: 'SERPER API KEY (GOOGLE IMAGES, OPTIONAL)', braveKeyPh: 'BRAVE SEARCH API KEY (OPTIONAL)',
+    saveAiConfig: 'SAVE AI CONFIG', testAiConnection: 'TEST CONNECTION',
+    aiSaved: 'AI CONFIG SAVED LOCALLY', aiTesting: 'TESTING AI CONNECTION…',
+    aiTestOk: 'CONNECTED', aiTestFailed: 'CONNECTION FAILED', aiFallbackTag: 'WEB AGGREGATION', aiModeOn: 'AI WEB SEARCH ON', aiModeOff: 'STANDARD SEARCH'
   },
   ja: {
     scopeAll: 'すべて', scopeSaved: 'お気に入り', scopeHistory: '履歴',
@@ -200,7 +220,16 @@ const I18N = {
     okLabel: '成功', failedLabel: '失敗',
     opened: '開きました', closed: '閉じました', settingsOpened: '設定を開きました', settingsClosed: '設定を閉じました',
     modeWindow: 'ウィンドウモード', modeFullscreen: '全画面モード', nextItem: '次へ', prevItem: '前へ',
-    unknownSize: 'サイズ不明'
+    unknownSize: 'サイズ不明', hideWindow: '隠す', clearFiltersAction: '解除 ×',
+    detailPureHint: 'Space長押しで純粋プレビュー · 0でリセット', framingHudZoom: '拡大',
+    aiSearchToggle: '✦ AI 検索', aiSearchPlaceholder: '欲しい壁紙の雰囲気や色味を入力し、Enter で AI 全網検索…',
+    aiExitResults: 'AI 結果を閉じる ×', aiSearching: 'AI がウェブを検索中…', aiNoResults: '一致する高解像度壁紙が見つかりません',
+    aiSearchTitle: 'AI ウェブ検索', aiSearchNote: 'OpenAI 互換 API または Google Gemini API を設定して自然言語で壁紙を検索します。キーはこの端末にのみ保存されます。',
+    aiBaseUrlPh: 'API BASE URL（空欄で既定値）', aiModelPh: 'MODEL（例: deepseek-chat / gemini-2.5-flash）',
+    aiApiKeyPh: 'AI API KEY', serperKeyPh: 'SERPER API KEY（任意）', braveKeyPh: 'BRAVE API KEY（任意）',
+    saveAiConfig: 'AI 設定を保存', testAiConnection: '接続テスト',
+    aiSaved: 'AI 設定を保存しました', aiTesting: '接続テスト中…',
+    aiTestOk: '接続成功', aiTestFailed: '接続失敗', aiFallbackTag: 'ウェブ統合検索', aiModeOn: 'AI 検索オン', aiModeOff: '通常検索'
   }
 };
 
@@ -219,7 +248,7 @@ const MAX_PREVIEW_ZOOM = 5;
 const TONES = [['any', 'toneAny'], ['warm', 'toneWarm'], ['cool', 'toneCool'], ['green', 'toneGreen'], ['mono', 'toneMono'], ['neutral', 'toneNeutral']];
 const GENRES = [['all', 'genreAll'], ['anime', 'genreAnime'], ['people', 'genrePeople'], ['landscape', 'genreLandscape'],
   ['animals', 'genreAnimals'], ['architecture', 'genreArchitecture'], ['space', 'genreSpace'], ['abstract', 'genreAbstract']];
-const RATIOS = [['any', 'ratioAny'], ['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1'], ['ultrawide', 'ULTRA'], ['portrait', 'PORT']];
+const RATIOS = [['any', 'ratioAny'], ['16:9', '16:9'], ['16:10', '16:10'], ['4:3', '4:3'], ['1:1', '1:1'], ['ultrawide', 'ULTRA'], ['portrait', 'PORT']];
 /* Resolution buckets use the SHORT edge, so portrait artwork is judged fairly.
    Sources without real dimensions are never guessed - they only match ANY / —. */
 const RES_MIN = { hd: 720, fhd: 1080, qhd: 1440, uhd: 2160 };
@@ -229,20 +258,70 @@ const RECENT_SEARCHES_KEY = 'wallscape.recentSearches';
 const MAX_RECENT_SEARCHES = 10;
 const FILTER_KEYS = ['scope', 'genre', 'tone', 'ratio', 'resolution', 'sort'];
 const SORTS = ['relevance', 'popular', 'newest'];
-const { FRAME_WIDTH: BASE_W, FRAME_HEIGHT: BASE_H } = framingGeometry;
-const PRESS_SEL = '.filter-word, .mode, .strip-action, .settings-action, .language-word, .mode-word, #apply-bar, #btn-settings-close, .card, .suggestion';
+let stageW = framingGeometry.FRAME_WIDTH;
+let stageH = framingGeometry.FRAME_HEIGHT;
+let stageAspect = stageW / stageH;
+
+function updateStageAspect(aspect) {
+  if (!Number.isFinite(aspect) || aspect <= 0) return false;
+  const clamped = Math.max(0.5, Math.min(3.6, aspect));
+  let nextW, nextH;
+  if (clamped >= 1) {
+    nextH = 900;
+    nextW = Math.round(Math.max(1200, Math.min(2160, nextH * clamped)));
+  } else {
+    nextW = 1080;
+    nextH = Math.round(Math.max(1200, Math.min(2160, nextW / clamped)));
+  }
+  const changed = nextW !== stageW || nextH !== stageH;
+  stageW = nextW;
+  stageH = nextH;
+  stageAspect = clamped;
+  const root = document.documentElement.style;
+  root.setProperty('--stage-w', stageW + 'px');
+  root.setProperty('--stage-h', stageH + 'px');
+  return changed;
+}
+
+function formatAspectLabel(w, h) {
+  if (!w || !h) return '';
+  const r = w / h;
+  const presets = [
+    [16 / 9, '16:9'], [16 / 10, '16:10'], [3 / 2, '3:2'], [4 / 3, '4:3'],
+    [21 / 9, '21:9'], [32 / 9, '32:9'], [9 / 16, '9:16'], [10 / 16, '10:16'], [1, '1:1']
+  ];
+  for (const [val, label] of presets) {
+    if (Math.abs(r - val) / val < 0.03) return label;
+  }
+  const gcd = (a, b) => b ? gcd(b, a % b) : a;
+  const g = gcd(Math.round(w), Math.round(h)) || 1;
+  const rw = Math.round(w / g), rh = Math.round(h / g);
+  return rw <= 40 && rh <= 40 ? `${rw}:${rh}` : `${r.toFixed(2)}:1`;
+}
+
+// Initialize immediately from the host display so first paint matches screen ratio.
+updateStageAspect(screen.width && screen.height ? screen.width / screen.height : 16 / 9);
+const PRESS_SEL = '.filter-word, .mode, .strip-action, .strip-motion-badge, .win-action, .settings-action, .language-word, .mode-word, #apply-bar, #btn-settings-close, .card, .suggestion';
 
 const S = {
   items: [], sources: [], settings: {}, favorites: [], history: [],
   credentials: {}, folders: [], status: null, background: null,
   scope: 'all', genre: 'all', tone: 'any', ratio: 'any', resolution: 'any', sort: 'relevance', query: '',
   filtered: [], current: null, currentCard: null, previewImage: null, framing: DEFAULT_FRAMING,
-  style: 'fill', monitorId: null, monitors: [], syncLock: false, busy: false, undoAvailable: false
+  style: 'fill', monitorId: null, monitors: [], syncLock: false, busy: false, undoAvailable: false,
+  aiMode: false, aiResults: null, aiMeta: null, aiBusy: false, aiProviderDraft: 'openai', aiFilterActive: false
 };
 
 let toastTimer = null, refreshing = false;
 let detailCloseTimer;
 let previewTurn = null;
+let previewLayout = null;
+let targetFraming = { ...DEFAULT_FRAMING };
+let framingRaf = 0;
+let framingLastTs = 0;
+let lastHudZoom = -1;
+let hoverPaperTimer = 0;
+let basePaperUrl = null;
 let suggestList = [], suggestIndex = -1, composingSearch = false;
 let onlineRequest = 0, onlineSearchKey = '', onlineItems = new Map();
 let wallhavenNextSearchPage, loadingMore = false;
@@ -278,6 +357,7 @@ async function boot() {
   S.style = MODES.some(([value]) => value === S.settings.style) ? S.settings.style : 'fill';
   S.syncLock = Boolean(S.settings.lockScreenSync);
   S.monitors = d.status?.monitors || [];
+  if (d.display?.aspect) updateStageAspect(d.display.aspect);
   S.undoAvailable = Boolean(d.undoAvailable);
   lang = ['zh', 'en', 'ja'].includes(S.settings.language) ? S.settings.language : 'zh';
 
@@ -315,22 +395,28 @@ async function boot() {
   }
 }
 
-/* Uniform scale of the SAME stage. No reflow, no per-element resizing. */
+/* Uniform scale of the adaptive stage. No reflow, no per-element resizing. */
 function layout() {
   const w = window.innerWidth, h = window.innerHeight;
-  const s = Math.min(w / BASE_W, h / BASE_H);
-  const x = (w - BASE_W * s) / 2, y = (h - BASE_H * s) / 2;
+  const s = Math.min(w / stageW, h / stageH);
+  const x = (w - stageW * s) / 2, y = (h - stageH * s) / 2;
   const root = document.documentElement.style;
+  root.setProperty('--stage-w', stageW + 'px');
+  root.setProperty('--stage-h', stageH + 'px');
   root.setProperty('--stage-s', String(s));
   root.setProperty('--stage-x', x + 'px');
   root.setProperty('--stage-y', y + 'px');
   requestAnimationFrame(() => {
     const stage = $('#stage').getBoundingClientRect();
-    const lowerEdge = (suggestionsOpen() ? $('#search-assist') : $('#searchbar')).getBoundingClientRect().bottom;
+    const banner = $('#ai-banner');
+    let lowerEdge = $('#searchbar').getBoundingClientRect().bottom;
+    if (suggestionsOpen()) lowerEdge = Math.max(lowerEdge, $('#search-assist').getBoundingClientRect().bottom);
+    if (banner && !banner.hidden) lowerEdge = Math.max(lowerEdge, banner.getBoundingClientRect().bottom);
     const input = $('#search').getBoundingClientRect();
     const scale = s || 1;
     root.setProperty('--suggestions-left', (input.left - stage.left) / scale + 'px');
-    root.setProperty('--grid-top', Math.ceil((lowerEdge - stage.top) / scale + 20) + 'px');
+    root.setProperty('--grid-top', Math.ceil((lowerEdge - stage.top) / scale + 16) + 'px');
+    paintGridProgress();
     queueWallhavenAutoLoad();
   });
 }
@@ -348,6 +434,7 @@ function applyI18n() {
   document.querySelectorAll('.language-word').forEach(w =>
     w.classList.toggle('is-active', w.dataset.lang === lang));
   paintModeWords();
+  paintAiMode();
   buildFilters();
   buildModes();
   paintEngineStatus();
@@ -361,6 +448,8 @@ function paintModeWords() {
   const cur = S.settings.windowMode === 'window' ? 'window' : 'immersive';
   document.querySelectorAll('.mode-word').forEach(w =>
     w.classList.toggle('is-active', w.dataset.mode === cur));
+  const modeBtn = $('#btn-win-mode');
+  if (modeBtn) modeBtn.textContent = t(cur === 'window' ? 'immersive' : 'window');
 }
 
 function setLanguage(next) {
@@ -391,8 +480,9 @@ function paintEngineStatus() {
   el.hidden = !unavailable;
 }
 
-function setPaper(url) {
+function setPaper(url, transient = false) {
   if (!url) return;
+  if (!transient) basePaperUrl = url;
   const safe = String(url).replace(/["')]/g, encodeURIComponent);
   $('#paper-image').style.backgroundImage = `url("${safe}")`;
 }
@@ -421,7 +511,7 @@ function bindFeedback() {
   }, true);
   document.addEventListener('dragstart', e => e.preventDefault());
   document.addEventListener('selectstart', e => {
-    if (!e.target.closest('#search, #favorite-name, #motion-search')) e.preventDefault();
+    if (!e.target.closest('#search, #favorite-name, #motion-search, .cred')) e.preventDefault();
   });
 }
 
@@ -430,7 +520,7 @@ function bindWindowDrag() {
   const m = $('#masthead');
   if (m) {
     m.addEventListener('pointerdown', e => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || e.target.closest('#window-controls')) return;
       if (S.settings.windowMode !== 'window') return;
       api.dragStart();
       const move = () => api.dragMove();
@@ -579,6 +669,7 @@ function buildFilters() {
         const submitted = Boolean(onlineSearchKey);
         if (restart) resetOnlineSearch();
         S[key] = value;
+        if (S.aiResults && ['tone', 'ratio', 'resolution'].includes(key)) S.aiFilterActive = true;
         persistFilters();
         $('#grid').scrollTop = 0;
         buildFilters(); applyFilters(); render();
@@ -589,19 +680,123 @@ function buildFilters() {
       block.appendChild(b);
     }
   }
+  paintClearFilters();
   layout();
+}
+
+function paintClearFilters() {
+  const btn = $('#btn-clear-filters');
+  if (!btn) return;
+  const active = S.scope !== 'all' || S.genre !== 'all' || S.tone !== 'any' ||
+    S.ratio !== 'any' || S.resolution !== 'any' || Boolean(S.query.trim()) || Boolean(S.aiResults);
+  btn.hidden = !active;
 }
 
 function clearFilters() {
   S.scope = 'all'; S.genre = 'all'; S.tone = 'any'; S.ratio = 'any';
   S.resolution = 'any'; S.query = '';
+  S.aiResults = null; S.aiMeta = null;
   $('#search').value = '';
   resetOnlineSearch();
   closeSuggestions();
+  paintAiBanner();
   persistFilters();
   $('#grid').scrollTop = 0;
   buildFilters(); applyFilters(); render();
   toast(t('filtersCleared'));
+}
+
+function paintAiMode() {
+  const bar = $('#searchbar');
+  const mark = $('#search-mark');
+  const btn = $('#btn-ai-mode');
+  const input = $('#search');
+  if (bar) {
+    bar.classList.toggle('is-ai-mode', S.aiMode);
+    bar.classList.toggle('is-ai-loading', S.aiBusy);
+  }
+  if (mark) mark.textContent = S.aiMode ? '✦' : '/';
+  if (btn) {
+    btn.classList.toggle('is-active', S.aiMode);
+    btn.setAttribute('aria-pressed', String(S.aiMode));
+  }
+  if (input) input.placeholder = t(S.aiMode ? 'aiSearchPlaceholder' : 'searchPlaceholder');
+}
+
+function paintAiBanner() {
+  const banner = $('#ai-banner');
+  const text = $('#ai-banner-text');
+  if (!banner || !text) return;
+  if (!S.aiResults) {
+    banner.hidden = true;
+    text.textContent = '';
+    layout();
+    return;
+  }
+  const meta = S.aiMeta || {};
+  const tag = meta.aiUsed
+    ? `✦ AI (${(meta.model || meta.provider || 'API').toUpperCase()})`
+    : `✦ ${t('aiFallbackTag')}`;
+  const channels = (meta.channels || []).map(c => `${c.name} ${c.count}`).join(' · ');
+  const errHint = meta.aiError ? ` · AI fallback: ${meta.aiError.slice(0, 36)}` : '';
+  const summary = meta.plan?.summary ? `${meta.plan.summary}` : '';
+  const parts = [tag, summary, channels].filter(Boolean);
+  text.textContent = parts.join(' · ') + errHint;
+  banner.hidden = false;
+  layout();
+}
+
+function exitAiResults() {
+  if (!S.aiResults) return;
+  S.aiResults = null;
+  S.aiMeta = null;
+  S.aiFilterActive = false;
+  paintAiBanner();
+  paintClearFilters();
+  $('#grid').scrollTop = 0;
+  renderSearch();
+}
+
+async function submitAiSearch() {
+  const prompt = $('#search').value.trim();
+  if (!prompt || S.aiBusy) return;
+  S.query = prompt;
+  closeSuggestions();
+  rememberSearch(prompt);
+  S.aiBusy = true;
+  paintAiMode();
+  toast(t('aiSearching'));
+  let result;
+  try {
+    const primary = previewMonitors()[0];
+    const displayRatio = primary ? formatAspectLabel(primary.width, primary.height) : formatAspectLabel(stageW, stageH);
+    const displayRatioBucket = primary ? ratioOf(primary.width, primary.height) : ratioOf(stageW, stageH);
+    result = await api.aiSearch(prompt, {
+      genre: S.genre,
+      tone: S.tone,
+      ratio: S.ratio,
+      resolution: S.resolution,
+      displayRatio,
+      displayRatioBucket
+    });
+  } catch (e) {
+    result = { ok: false, error: String(e.message || e), items: [] };
+  }
+  S.aiBusy = false;
+  paintAiMode();
+  if (!result || !result.ok) {
+    toast(`${t('failedLabel')} / ${(result?.error || 'unknown').slice(0, 36)}`);
+    return;
+  }
+  S.aiResults = result.items || [];
+  S.aiMeta = result;
+  S.aiFilterActive = false;
+  paintAiBanner();
+  paintClearFilters();
+  $('#grid').scrollTop = 0;
+  applyFilters();
+  render();
+  toast(S.filtered.length ? `✦ ${pad(S.filtered.length)} ${t('images')}` : t('aiNoResults'));
 }
 
 function setFavorites(favorites) {
@@ -637,7 +832,10 @@ function updateFavorites(favorites, id) {
 function matchesFilters(item) {
   if (!wallpaperSearch.matchesGenre(item, S.genre)) return false;
   if (S.tone !== 'any' && (item.tone || 'neutral') !== S.tone) return false;
-  if (S.ratio !== 'any' && item.ratio !== S.ratio) return false;
+  if (S.ratio !== 'any') {
+    const itemRatio = (item.width && item.height) ? ratioOf(item.width, item.height) : item.ratio;
+    if (itemRatio !== S.ratio) return false;
+  }
   if (S.resolution !== 'any') {
     const known = !!(item.width && item.height && !item.sizeFromThumb);
     if (S.resolution === 'unknown') {
@@ -663,6 +861,28 @@ function scopedItems(includeOnline = false) {
 }
 
 function applyFilters() {
+  if (S.aiResults) {
+    S.filtered = S.aiFilterActive ? S.aiResults.filter(item => {
+      if (S.tone !== 'any' && (item.tone || 'neutral') !== S.tone) return false;
+      if (S.ratio !== 'any') {
+        const itemRatio = (item.width && item.height) ? ratioOf(item.width, item.height) : item.ratio;
+        if (itemRatio !== S.ratio) return false;
+      }
+      if (S.resolution !== 'any') {
+        const known = !!(item.width && item.height && !item.sizeFromThumb);
+        if (S.resolution === 'unknown') {
+          if (known) return false;
+        } else {
+          if (!known) return false;
+          if (Math.min(item.width, item.height) < RES_MIN[S.resolution]) return false;
+        }
+      }
+      return true;
+    }) : S.aiResults.slice();
+    if (S.sort === 'popular') S.filtered.sort(wallpaperSearch.comparePopularity);
+    else if (S.sort === 'newest') S.filtered.sort(wallpaperSearch.compareDate);
+    return;
+  }
   const words = wallpaperSearch.terms(S.query);
   S.filtered = scopedItems(true).filter(item => !words.length || (S.scope === 'all' && onlineItems.has(item.id)) ||
     wallpaperSearch.matches(wallpaperSearch.indexWithName(item, customName(item)), words));
@@ -690,6 +910,12 @@ function renderSearch(append = false, preservePosition = append) {
 }
 
 function paintSearchCount() {
+  if (S.aiResults) {
+    $('#search-result').textContent = `${pad(S.filtered.length)} / ${pad(S.aiResults.length)}`;
+    $('#btn-wallhaven-more').hidden = true;
+    paintBackToTop();
+    return;
+  }
   const additional = [...onlineItems.keys()].filter(id => !indexedItems.has(id)).length;
   $('#search-result').textContent = `${pad(S.filtered.length)} / ${pad(Math.max(S.items.length + additional, S.filtered.length))}`;
   paintWallhavenMore();
@@ -700,6 +926,23 @@ function paintSearchCount() {
 function paintBackToTop() {
   const grid = $('#grid');
   $('#btn-back-to-top').hidden = grid.scrollTop <= grid.clientHeight;
+  paintGridProgress();
+}
+
+function paintGridProgress() {
+  const track = $('#grid-progress');
+  const thumb = $('#grid-progress-thumb');
+  const grid = $('#grid');
+  if (!track || !thumb || !grid) return;
+  const maxScroll = grid.scrollHeight - grid.clientHeight;
+  const visible = maxScroll > 40 && S.filtered.length > 0;
+  track.classList.toggle('is-visible', visible);
+  if (!visible) return;
+  const ratio = Math.max(0.08, Math.min(1, grid.clientHeight / grid.scrollHeight));
+  const progress = Math.max(0, Math.min(1, grid.scrollTop / maxScroll));
+  const thumbPct = ratio * 100;
+  thumb.style.height = thumbPct + '%';
+  thumb.style.top = (progress * (100 - thumbPct)) + '%';
 }
 
 function backToTop() {
@@ -736,6 +979,8 @@ function render(appendFrom = 0, preservePosition = false) {
     }
   }
   let cursor = appendFrom ? null : grid.firstElementChild;
+  let staggerSlot = 0;
+  const allowStagger = !appendFrom && !preservePosition;
   for (let index = appendFrom; index < list.length; index++) {
     const item = list[index];
     let card = cardsById.get(item.id);
@@ -745,7 +990,27 @@ function render(appendFrom = 0, preservePosition = false) {
       card.dataset.id = item.id;
       card.innerHTML = '<img alt="" data-state="idle"><span class="card-fav">◆</span>' +
         '<span class="card-fallback"></span><div class="card-caption"><div class="card-title"></div></div>';
-      card.addEventListener('click', () => openDetail(cardItems.get(card), card));
+      card.addEventListener('click', () => {
+        clearTimeout(hoverPaperTimer);
+        openDetail(cardItems.get(card), card);
+      });
+      card.addEventListener('pointerenter', () => {
+        clearTimeout(hoverPaperTimer);
+        hoverPaperTimer = setTimeout(() => {
+          const hovered = cardItems.get(card);
+          const url = hovered && thumbOf(hovered);
+          if (url && !$('#detail').classList.contains('is-open')) setPaper(url, true);
+        }, 380);
+      });
+      card.addEventListener('pointerleave', () => {
+        clearTimeout(hoverPaperTimer);
+      });
+      if (allowStagger && staggerSlot < 15) {
+        card.style.setProperty('--enter-delay', (staggerSlot * 26) + 'ms');
+        card.classList.add('is-entering');
+        card.addEventListener('animationend', () => card.classList.remove('is-entering'), { once: true });
+        staggerSlot++;
+      }
       cardsById.set(item.id, card);
       io.observe(card);
     }
@@ -826,6 +1091,16 @@ function sampleTone(item, img) {
 function buildModes() {
   const box = $('#mode-scale');
   box.innerHTML = '';
+  const slider = document.createElement('div');
+  slider.className = 'mode-slider';
+  slider.style.width = `${100 / MODES.length}%`;
+  box.appendChild(slider);
+
+  const syncSlider = () => {
+    const idx = Math.max(0, MODES.findIndex(([v]) => v === S.style));
+    slider.style.transform = `translate3d(${idx * 100}%, 0, 0)`;
+  };
+
   for (const [value, labelKey, noteKey] of MODES) {
     const el = document.createElement('button');
     el.type = 'button';
@@ -835,11 +1110,12 @@ function buildModes() {
     el.textContent = t(labelKey);
     el.addEventListener('click', () => {
       S.style = value;
-      for (const m of box.children) {
+      for (const m of box.querySelectorAll('.mode')) {
         const active = m.dataset.value === value;
         m.classList.toggle('is-active', active);
         m.setAttribute('aria-pressed', String(active));
       }
+      syncSlider();
       paintPreview();
       paintSide();
       if (value === 'span') api.readStatus(true);
@@ -848,6 +1124,7 @@ function buildModes() {
     });
     box.appendChild(el);
   }
+  syncSlider();
 }
 
 function previewMonitors() {
@@ -867,8 +1144,23 @@ function readFraming(id) {
   return DEFAULT_FRAMING;
 }
 
+function stopFramingAnimation() {
+  if (framingRaf) {
+    cancelAnimationFrame(framingRaf);
+    framingRaf = 0;
+  }
+  framingLastTs = 0;
+}
+
+function flushFraming() {
+  stopFramingAnimation();
+  S.framing = { ...targetFraming };
+  applyFramingFrame();
+}
+
 function saveFraming(reset = false) {
   if (!S.current || !S.previewImage?.url) return;
+  if (!reset) flushFraming();
   const key = FRAMING_KEY_PREFIX + S.current.id;
   const { zoom, x, y } = S.framing;
   try {
@@ -879,18 +1171,94 @@ function saveFraming(reset = false) {
     return;
   }
   if (reset) {
-    S.framing = DEFAULT_FRAMING;
-    paintFraming();
+    stopFramingAnimation();
+    S.framing = { ...DEFAULT_FRAMING };
+    targetFraming = { ...DEFAULT_FRAMING };
+    applyFramingFrame();
   }
   toast(t(reset ? 'framingReset' : 'framingSaved'));
 }
 
-function paintFraming() {
-  const preview = $('#detail-preview');
+function isDefaultFraming(f = S.framing) {
+  return Math.abs((f.zoom ?? 1) - 1) < 0.005 && Math.abs(f.x ?? 0) < 0.002 && Math.abs(f.y ?? 0) < 0.002;
+}
+
+function applyFramingFrame() {
   const { zoom, x, y } = S.framing;
-  preview.style.setProperty('--preview-zoom', zoom);
-  preview.style.setProperty('--preview-x', `${(x + (1 - zoom) / 2) * preview.clientWidth}px`);
-  preview.style.setProperty('--preview-y', `${(y + (1 - zoom) / 2) * preview.clientHeight}px`);
+  if (previewLayout) {
+    const { width, height, baseX, baseY, baseW, baseH, tile, layers } = previewLayout;
+    const offsetX = (x + (1 - zoom) / 2) * width;
+    const offsetY = (y + (1 - zoom) / 2) * height;
+    for (let i = 0; i < layers.length; i++) {
+      const layer = layers[i];
+      const tx = baseX * zoom + offsetX - layer.monX;
+      const ty = baseY * zoom + offsetY - layer.monY;
+      if (tile && layer.tileEl) {
+        layer.tileEl.style.backgroundSize = `${baseW * zoom}px ${baseH * zoom}px`;
+        layer.tileEl.style.backgroundPosition = `${tx}px ${ty}px`;
+      } else if (layer.img) {
+        layer.img.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${zoom})`;
+      }
+    }
+  }
+  const pct = Math.round(zoom * 100);
+  if (pct !== lastHudZoom) {
+    lastHudZoom = pct;
+    const hud = $('#framing-hud');
+    if (hud) hud.textContent = `${t('framingHudZoom')} ${pct}%`;
+  }
+  const muted = isDefaultFraming(S.framing);
+  $('#btn-save-framing')?.classList.toggle('is-muted', muted);
+  $('#btn-reset-framing')?.classList.toggle('is-muted', muted);
+}
+
+function stepFramingAnimation(ts) {
+  framingRaf = 0;
+  const dt = framingLastTs ? Math.min(0.05, Math.max(0.001, (ts - framingLastTs) / 1000)) : 0.016;
+  framingLastTs = ts;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const alpha = reduced ? 1 : 1 - Math.exp(-22 * dt);
+  const dz = targetFraming.zoom - S.framing.zoom;
+  const dx = targetFraming.x - S.framing.x;
+  const dy = targetFraming.y - S.framing.y;
+  if (Math.abs(dz) < 0.0005 && Math.abs(dx) < 0.0002 && Math.abs(dy) < 0.0002) {
+    S.framing = { ...targetFraming };
+    framingLastTs = 0;
+    applyFramingFrame();
+    return;
+  }
+  S.framing = {
+    zoom: S.framing.zoom + dz * alpha,
+    x: S.framing.x + dx * alpha,
+    y: S.framing.y + dy * alpha
+  };
+  applyFramingFrame();
+  framingRaf = requestAnimationFrame(stepFramingAnimation);
+}
+
+function setTargetFraming(next, immediate = false) {
+  targetFraming = { zoom: next.zoom, x: next.x, y: next.y };
+  if (immediate) {
+    S.framing = { ...targetFraming };
+    if (!framingRaf) {
+      framingRaf = requestAnimationFrame(() => {
+        framingRaf = 0;
+        framingLastTs = 0;
+        applyFramingFrame();
+      });
+    }
+    return;
+  }
+  if (!framingRaf) {
+    framingLastTs = 0;
+    framingRaf = requestAnimationFrame(stepFramingAnimation);
+  }
+}
+
+function paintFraming() {
+  stopFramingAnimation();
+  targetFraming = { ...S.framing };
+  applyFramingFrame();
 }
 
 function clearPreviewTurn() {
@@ -924,14 +1292,14 @@ function playPreviewTurn(current) {
   }
 
   const distance = 12 * turn.direction;
-  const timing = { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' };
+  const timing = { duration: 340, easing: 'cubic-bezier(.22,1,.36,1)' };
   turn.exit = turn.previous.animate([
-    { transform: 'translateY(0)', opacity: 1 },
-    { transform: `translateY(${-distance}%)`, opacity: 0 }
+    { transform: 'translateY(0) scale(1)', opacity: 1 },
+    { transform: `translateY(${-distance}%) scale(.97)`, opacity: 0 }
   ], timing);
   turn.enter = current.animate([
-    { transform: `translateY(${distance}%)`, opacity: 0 },
-    { transform: 'translateY(0)', opacity: 1 }
+    { transform: `translateY(${distance}%) scale(1.025)`, opacity: 0 },
+    { transform: 'translateY(0) scale(1)', opacity: 1 }
   ], timing);
   turn.enter.onfinish = () => {
     if (previewTurn === turn) clearPreviewTurn();
@@ -941,11 +1309,15 @@ function playPreviewTurn(current) {
 function paintPreview() {
   const image = S.previewImage;
   const preview = $('#detail-preview');
-  if (!image?.url || !preview.clientWidth || !preview.clientHeight) return;
+  const previewW = preview.clientWidth || stageW;
+  const previewH = preview.clientHeight || stageH;
+  if (!image?.url || !previewW || !previewH) return;
 
   const monitors = previewMonitors();
   const fallback = {
-    x: 0, y: 0, width: screen.width * devicePixelRatio, height: screen.height * devicePixelRatio
+    index: 0, x: 0, y: 0,
+    width: Math.round(screen.width * devicePixelRatio),
+    height: Math.round(screen.height * devicePixelRatio)
   };
   const primary = monitors.find(m => m.x === 0 && m.y === 0) || monitors[0] || fallback;
   const id = previewMonitorId();
@@ -955,35 +1327,61 @@ function paintPreview() {
     ? monitors
     : [monitors.find(m => m.id === id) || primary];
   const bounds = monitorBounds(targets);
-  const viewport = framingViewport(bounds, preview.clientWidth, preview.clientHeight);
+  const viewport = framingViewport(bounds, previewW, previewH);
   const { scale } = viewport;
   const placement = imagePlacement(image, bounds, S.style, DEFAULT_FRAMING);
   const imageWidth = placement.width * scale;
   const imageHeight = placement.height * scale;
   const imageX = (placement.x - viewport.x) * scale;
   const imageY = (placement.y - viewport.y) * scale;
-  const backgroundImage = `url(${JSON.stringify(image.url)})`;
-  paintFraming();
+  const layers = [];
   preview.classList.toggle('is-multi', targets.length > 1);
-  preview.replaceChildren(...targets.map(m => {
+  preview.replaceChildren(...targets.map((m, idx) => {
     const layer = document.createElement('div');
-    const x = (m.x - viewport.x) * scale;
-    const y = (m.y - viewport.y) * scale;
+    const monX = (m.x - viewport.x) * scale;
+    const monY = (m.y - viewport.y) * scale;
     layer.className = 'preview-monitor';
     Object.assign(layer.style, {
-      left: `${x}px`, top: `${y}px`,
-      width: `${m.width * scale}px`, height: `${m.height * scale}px`,
-      backgroundImage
+      left: `${monX}px`, top: `${monY}px`,
+      width: `${m.width * scale}px`, height: `${m.height * scale}px`
     });
-    layer.style.setProperty('--monitor-x', `${x}px`);
-    layer.style.setProperty('--monitor-y', `${y}px`);
-    layer.style.setProperty('--image-width', `${imageWidth}px`);
-    layer.style.setProperty('--image-height', `${imageHeight}px`);
-    layer.style.setProperty('--image-x', `${imageX}px`);
-    layer.style.setProperty('--image-y', `${imageY}px`);
-    if (tile) layer.style.backgroundRepeat = 'repeat';
+    let imgEl = null, tileEl = null;
+    if (tile) {
+      tileEl = document.createElement('div');
+      tileEl.className = 'preview-tile';
+      tileEl.style.backgroundImage = `url(${JSON.stringify(image.url)})`;
+      layer.appendChild(tileEl);
+    } else {
+      imgEl = document.createElement('img');
+      imgEl.className = 'preview-img';
+      imgEl.alt = '';
+      imgEl.decoding = 'async';
+      imgEl.src = image.url;
+      imgEl.style.width = `${imageWidth}px`;
+      imgEl.style.height = `${imageHeight}px`;
+      layer.appendChild(imgEl);
+    }
+    const thirds = document.createElement('div');
+    thirds.className = 'preview-grid-thirds';
+    layer.appendChild(thirds);
+
+    const tag = document.createElement('span');
+    tag.className = 'preview-monitor-tag';
+    const ratioStr = formatAspectLabel(m.width, m.height);
+    const num = pad((Number.isFinite(m.index) ? m.index : idx) + 1, 2);
+    tag.textContent = `${num} · ${m.width}×${m.height}${ratioStr ? ' · ' + ratioStr : ''}`;
+    layer.appendChild(tag);
+
+    layers.push({ el: layer, img: imgEl, tileEl, monX, monY });
     return layer;
   }));
+  previewLayout = {
+    width: previewW, height: previewH,
+    baseX: imageX, baseY: imageY, baseW: imageWidth, baseH: imageHeight,
+    tile, layers
+  };
+  lastHudZoom = -1;
+  applyFramingFrame();
   playPreviewTurn(preview);
 }
 
@@ -1037,7 +1435,11 @@ function openDetail(item, card, direction = 0) {
   else clearPreviewTurn();
   $('#search').blur();
   S.current = item; S.currentCard = card;
+  stopFramingAnimation();
   S.framing = readFraming(item.id);
+  targetFraming = { ...S.framing };
+  previewLayout = null;
+  lastHudZoom = -1;
   const d = $('#detail');
   $('#detail-source').textContent = `${item.sourceLabel || SOURCE_NAMES[item.source] || ''} / ${item.license || ''}`;
   $('#detail-author').textContent = item.author || 'UNKNOWN';
@@ -1083,6 +1485,9 @@ function openDetail(item, card, direction = 0) {
 function closeDetail() {
   const d = $('#detail');
   if (!d.classList.contains('is-open') || d.classList.contains('is-closing')) return;
+  stopFramingAnimation();
+  previewLayout = null;
+  d.classList.remove('is-framing', 'is-pure');
   clearPreviewTurn();
   const img = $('#detail-preview'); const card = S.currentCard;
   if (card && S.previewImage?.url) {
@@ -1128,33 +1533,42 @@ function stepDetail(dir) {
 function bindPreviewControls() {
   const detail = $('#detail');
   const visual = $('#detail-visual');
-  let drag = null, didPan = false;
+  let drag = null, didPan = false, zoomFadeTimer = 0;
+  let wheelRect = null, wheelRectAt = 0;
   let lastWheelAt = -Infinity, wheelTravel = 0, wheelStepped = false;
+
+  const endFraming = () => {
+    clearTimeout(zoomFadeTimer);
+    zoomFadeTimer = 0;
+    detail.classList.remove('is-framing');
+  };
 
   visual.addEventListener('pointerdown', e => {
     if (e.button !== 0 || !e.isPrimary) return;
     didPan = false;
     if (!S.previewImage?.url) return;
-    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, framing: S.framing };
+    flushFraming();
+    const rect = visual.getBoundingClientRect();
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, width: rect.width || stageW, height: rect.height || stageH, framing: { ...S.framing } };
     visual.setPointerCapture(e.pointerId);
   });
   visual.addEventListener('pointermove', e => {
     if (drag?.id !== e.pointerId || !S.previewImage?.url) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (!didPan && Math.hypot(dx, dy) < 4) return;
-    const rect = visual.getBoundingClientRect();
     didPan = true;
     visual.classList.add('is-panning');
-    S.framing = {
+    detail.classList.add('is-framing');
+    setTargetFraming({
       zoom: drag.framing.zoom,
-      x: drag.framing.x + dx / rect.width,
-      y: drag.framing.y + dy / rect.height
-    };
-    paintFraming();
+      x: drag.framing.x + dx / drag.width,
+      y: drag.framing.y + dy / drag.height
+    }, true);
   });
   visual.addEventListener('lostpointercapture', () => {
     drag = null;
     visual.classList.remove('is-panning');
+    endFraming();
   });
   visual.addEventListener('click', () => {
     if (!didPan) closeDetail();
@@ -1163,19 +1577,29 @@ function bindPreviewControls() {
   detail.addEventListener('wheel', e => {
     e.preventDefault();
     if (drag || !S.current || detail.classList.contains('is-closing')) return;
-    const rect = visual.getBoundingClientRect();
+    if (!wheelRect || e.timeStamp - wheelRectAt > 260) {
+      wheelRect = visual.getBoundingClientRect();
+      wheelRectAt = e.timeStamp;
+    }
+    const rect = wheelRect;
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? rect.height : 1;
     const delta = e.deltaY * unit;
     if (!delta) return;
     if (e.ctrlKey) {
       if (!S.previewImage?.url) return;
-      const { zoom, x, y } = S.framing;
-      const next = Math.max(MIN_PREVIEW_ZOOM, Math.min(MAX_PREVIEW_ZOOM, zoom * Math.exp(-0.0017 * delta)));
-      const ratio = next / zoom;
+      const base = targetFraming;
+      const next = Math.max(MIN_PREVIEW_ZOOM, Math.min(MAX_PREVIEW_ZOOM, base.zoom * Math.exp(-0.0018 * delta)));
+      const ratio = next / base.zoom;
       const cursorX = (e.clientX - rect.left) / rect.width - 0.5;
       const cursorY = (e.clientY - rect.top) / rect.height - 0.5;
-      S.framing = { zoom: next, x: x * ratio + cursorX * (1 - ratio), y: y * ratio + cursorY * (1 - ratio) };
-      paintFraming();
+      detail.classList.add('is-framing');
+      clearTimeout(zoomFadeTimer);
+      zoomFadeTimer = setTimeout(endFraming, 760);
+      setTargetFraming({
+        zoom: next,
+        x: base.x * ratio + cursorX * (1 - ratio),
+        y: base.y * ratio + cursorY * (1 - ratio)
+      }, false);
       return;
     }
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
@@ -1197,15 +1621,17 @@ function bindPreviewControls() {
 /* ---------------- apply / export / mode ---------------- */
 async function applyCurrent() {
   if (!S.current || S.busy) return;
+  flushFraming();
   S.busy = true;
   $('#apply-bar').classList.add('is-busy');
   $('#receipt').textContent = t('preparingWallpaper');
   let r;
   try {
     const topology = previewMonitors().map(({ id, x, y, width, height }) => ({ id, x, y, width, height }));
+    const viewport = { width: previewLayout?.width || stageW, height: previewLayout?.height || stageH };
     r = await api.apply({
       item: S.current, style: S.style, monitorId: previewMonitorId(),
-      topology: topology.length ? topology : null, syncLock: S.syncLock, framing: S.framing
+      topology: topology.length ? topology : null, syncLock: S.syncLock, framing: S.framing, viewport
     });
   }
   catch (e) { r = { ok: false, error: String(e.message || e) }; }
@@ -1223,6 +1649,11 @@ async function applyCurrent() {
   $('#receipt').textContent =
     `${t('okLabel')} / ${r.style.toUpperCase()} / ${t('display')} ${r.targetCount}` +
     (r.lock ? ` / LOCK ${r.lock.ok ? 'OK' : 'FAILED'}` : '');
+  const detail = $('#detail');
+  detail.classList.remove('is-applied');
+  void detail.offsetWidth;
+  detail.classList.add('is-applied');
+  setTimeout(() => detail.classList.remove('is-applied'), 500);
   toast(t('applied'));
 }
 
@@ -1275,11 +1706,21 @@ async function openSettings() {
   $('#folder-list').innerHTML = S.folders.length
     ? S.folders.map(f => `<div class="folder-row">${esc(f)}</div>`).join('')
     : `<div class="folder-row">${esc(t('localFolderNone'))}</div>`;
-  for (const [id, key] of [['cred-unsplash', 'unsplash'], ['cred-pexels', 'pexels']]) {
+  for (const [id, key] of [['cred-unsplash', 'unsplash'], ['cred-pexels', 'pexels'],
+      ['cred-ai-key', 'aiApiKey'], ['cred-serper', 'serperKey'], ['cred-brave', 'braveKey']]) {
     const el = $('#' + id);
+    if (!el) continue;
     el.value = '';
     el.placeholder = `${t(el.dataset.i18nPh)}${S.credentials[key] ? ' · ✓' : ''}`;
   }
+  S.aiProviderDraft = S.credentials.aiProvider === 'gemini' ? 'gemini' : 'openai';
+  paintAiProviderWords();
+  const aiBase = $('#cred-ai-base');
+  const aiModel = $('#cred-ai-model');
+  if (aiBase) aiBase.value = S.credentials.aiBaseUrl || '';
+  if (aiModel) aiModel.value = S.credentials.aiModel || '';
+  const aiStatus = $('#ai-test-status');
+  if (aiStatus) { aiStatus.textContent = ''; aiStatus.classList.remove('is-bad'); }
   $('#btn-autostart').textContent = `${t('autoStart')} / ${S.settings.autoStart ? t('on') : t('off')}`;
   $('#lock-probe').textContent = `${t('lockScreen')} / ${t('checking')}`;
   paintModeWords();
@@ -1473,16 +1914,27 @@ function resetOnlineSearch() {
   wallhavenNextSearchPage = undefined;
 }
 
+function paintAiProviderWords() {
+  document.querySelectorAll('.ai-provider-word').forEach(w =>
+    w.classList.toggle('is-active', w.dataset.provider === S.aiProviderDraft));
+}
+
 function syncSearchInput() {
   const value = $('#search').value;
   if (value !== S.query) {
-    resetOnlineSearch();
     S.query = value;
+    if (S.aiResults) {
+      if (!value.trim()) exitAiResults();
+      else paintClearFilters();
+      return;
+    }
+    resetOnlineSearch();
     $('#grid').scrollTop = 0;
+    paintClearFilters();
     renderSearch();
     loadGenreFeed();
   }
-  updateSuggestions();
+  if (!S.aiMode) updateSuggestions();
 }
 
 async function submitSearch(userSubmitted = true, force = false) {
@@ -1526,6 +1978,13 @@ async function toggleFav() {
   try {
     const res = await api.toggleFavorite(item);
     updateFavorites(res.favorites, item.id);
+    const favBtn = $('#btn-fav');
+    if (favBtn) {
+      favBtn.classList.remove('is-pop');
+      void favBtn.offsetWidth;
+      favBtn.classList.add('is-pop');
+      setTimeout(() => favBtn.classList.remove('is-pop'), 420);
+    }
     toast(res.favorited ? t('savedToast') : t('removed'));
   } catch { toast(t('saveFailed')); }
 }
@@ -1599,6 +2058,22 @@ function bind() {
   const clearHistory = $('#btn-clear-search-history');
   clearHistory.addEventListener('mousedown', event => event.preventDefault());
   clearHistory.addEventListener('click', clearRecentSearches);
+  $('#btn-ai-mode')?.addEventListener('click', () => {
+    S.aiMode = !S.aiMode;
+    paintAiMode();
+    toast(t(S.aiMode ? 'aiModeOn' : 'aiModeOff'));
+    if (S.aiMode) {
+      closeSuggestions();
+      if ($('#search').value.trim()) submitAiSearch();
+      else $('#search').focus();
+    } else if (S.aiResults) {
+      exitAiResults();
+    }
+  });
+  $('#btn-ai-exit')?.addEventListener('click', exitAiResults);
+  $('#btn-win-mode')?.addEventListener('click', toggleWindowMode);
+  $('#btn-win-hide')?.addEventListener('click', () => api.hide());
+  $('#btn-clear-filters')?.addEventListener('click', clearFilters);
   $('#btn-refresh').addEventListener('click', refresh);
   $('#btn-wallhaven-more').addEventListener('click', () => loadMoreWallhaven());
   $('#btn-back-to-top').addEventListener('click', backToTop);
@@ -1606,6 +2081,10 @@ function bind() {
     paintBackToTop();
     queueWallhavenAutoLoad();
   }, { passive: true });
+  $('#grid').addEventListener('pointerleave', () => {
+    clearTimeout(hoverPaperTimer);
+    if (basePaperUrl && !$('#detail').classList.contains('is-open')) setPaper(basePaperUrl, true);
+  });
   $('#btn-settings').addEventListener('click', openSettings);
   $('#btn-settings-close').addEventListener('click', closeSettings);
   $('#btn-close').addEventListener('click', closeDetail);
@@ -1640,6 +2119,48 @@ function bind() {
     S.monitorId = next?.id || null;
     paintPreview();
     paintSide(); toast(next ? `${t('display')} ${pad(next.index + 1, 2)}` : t('allDisplaysToast'));
+  });
+  document.querySelectorAll('.ai-provider-word').forEach(w =>
+    w.addEventListener('click', () => {
+      S.aiProviderDraft = w.dataset.provider === 'gemini' ? 'gemini' : 'openai';
+      paintAiProviderWords();
+    }));
+  $('#btn-save-ai')?.addEventListener('click', async () => {
+    const patch = {
+      aiProvider: S.aiProviderDraft,
+      aiBaseUrl: ($('#cred-ai-base')?.value || '').trim(),
+      aiModel: ($('#cred-ai-model')?.value || '').trim()
+    };
+    const key = ($('#cred-ai-key')?.value || '').trim();
+    const serper = ($('#cred-serper')?.value || '').trim();
+    const brave = ($('#cred-brave')?.value || '').trim();
+    if (key) patch.aiApiKey = key;
+    if (serper) patch.serperKey = serper;
+    if (brave) patch.braveKey = brave;
+    const r = await api.setCredentials(patch);
+    if (r?.credentials) S.credentials = r.credentials;
+    openSettings();
+    toast(t('aiSaved'));
+  });
+  $('#btn-test-ai')?.addEventListener('click', async () => {
+    const status = $('#ai-test-status');
+    if (status) { status.textContent = t('aiTesting'); status.classList.remove('is-bad'); }
+    const draft = {
+      aiProvider: S.aiProviderDraft,
+      aiBaseUrl: ($('#cred-ai-base')?.value || '').trim(),
+      aiModel: ($('#cred-ai-model')?.value || '').trim(),
+      aiApiKey: ($('#cred-ai-key')?.value || '').trim()
+    };
+    let r;
+    try { r = await api.aiTest(draft); }
+    catch (e) { r = { ok: false, error: String(e.message || e) }; }
+    if (status) {
+      status.textContent = r.ok
+        ? `✓ ${t('aiTestOk')} · ${(r.provider || '').toUpperCase()} / ${r.model || ''} (${r.latencyMs}ms)`
+        : `× ${t('aiTestFailed')} · ${(r.error || 'unknown').slice(0, 80)}`;
+      status.classList.toggle('is-bad', !r.ok);
+    }
+    toast(r.ok ? t('aiTestOk') : t('aiTestFailed'));
   });
   $('#btn-save-cred').addEventListener('click', async () => {
     const patch = {};
@@ -1718,7 +2239,8 @@ function bind() {
       if (detailOpen) applyCurrent();
       else if (typing) {
         e.preventDefault();
-        if (suggestionsOpen() && suggestIndex >= 0) acceptSuggestion(suggestList[suggestIndex]);
+        if (S.aiMode) submitAiSearch();
+        else if (suggestionsOpen() && suggestIndex >= 0) acceptSuggestion(suggestList[suggestIndex]);
         else submitSearch();
       }
       return;
@@ -1727,6 +2249,16 @@ function bind() {
       e.preventDefault(); stepDetail(e.key === 'ArrowRight' ? 1 : -1); return;
     }
     if (typing) return;
+    if (detailOpen && e.code === 'Space') {
+      e.preventDefault();
+      $('#detail').classList.add('is-pure');
+      return;
+    }
+    if (detailOpen && e.key === '0') {
+      e.preventDefault();
+      saveFraming(true);
+      return;
+    }
     if (e.key === 'Home' && !detailOpen) { e.preventDefault(); backToTop(); return; }
     const k = e.key.toLowerCase();
     if (k === 's') { toggleFav(); return; }
@@ -1734,6 +2266,12 @@ function bind() {
     if (k === 'c') { clearFilters(); return; }
     if (k === 'f') { toggleWindowMode(); return; }
     if (k === 'd' && detailOpen) { saveImageAs(); return; }
+  });
+  document.addEventListener('keyup', e => {
+    if (e.code === 'Space') $('#detail').classList.remove('is-pure');
+  });
+  window.addEventListener('blur', () => {
+    $('#detail').classList.remove('is-pure', 'is-framing');
   });
   window.addEventListener('wheel', e => {
     if (['#detail', '#settings', '#motion-library'].some(selector => $(selector).classList.contains('is-open'))) return;
@@ -1786,8 +2324,11 @@ function bindApiEvents() {
           return ['id', 'index', 'x', 'y', 'width', 'height'].every(key => monitor[key] === previous[key]);
         });
         S.monitors = active;
+        const primary = active.find(m => m.x === 0 && m.y === 0) || active[0];
+        const stageChanged = primary ? updateStageAspect(primary.width / primary.height) : false;
         if (!active.some(m => m.id === S.monitorId)) S.monitorId = null;
-        if (!sameLayout) {
+        if (stageChanged) layout();
+        if (!sameLayout || stageChanged) {
           paintSide();
           paintPreview();
         }

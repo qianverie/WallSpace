@@ -18,7 +18,11 @@ const DEFAULTS = {
     lockScreenSync: false,
     autoStart: false
   },
-  credentials: { unsplash: '', pexels: '', wallhaven: '', proxy: '' },
+  credentials: {
+    unsplash: '', pexels: '', wallhaven: '', proxy: '',
+    aiProvider: 'openai', aiBaseUrl: '', aiApiKey: '', aiModel: '',
+    serperKey: '', braveKey: ''
+  },
   desktop: { undo: null, profiles: {} },
   motionLibrary: [],
   customFolders: []

@@ -41,6 +41,10 @@
         <img class="brand-mark" src="../assets/brand-mark.png" alt="">
         <span aria-hidden="true">SCAPE</span>
       </h1>
+      <div id="window-controls">
+        <button type="button" class="win-action" id="btn-win-mode" data-i18n="immersive">全屏</button>
+        <button type="button" class="win-action" id="btn-win-hide" data-i18n="hideWindow">隐藏</button>
+      </div>
     </header>
 
     <nav id="filters" aria-label="筛选">
@@ -49,13 +53,15 @@
       <div class="filter-block" id="tone-block"></div>
       <div class="filter-block" id="ratio-block"></div>
       <div class="filter-block" id="resolution-block"></div>
+      <button type="button" class="filter-word filter-clear" id="btn-clear-filters" data-i18n="clearFiltersAction" hidden>清空 ×</button>
     </nav>
 
     <div id="searchbar">
-      <span class="search-mark">/</span>
+      <span class="search-mark" id="search-mark">/</span>
       <input id="search" type="text" autocomplete="off" spellcheck="false"
-             placeholder="搜索壁纸" data-i18n-ph="searchPlaceholder" maxlength="120"
+             placeholder="搜索壁纸" data-i18n-ph="searchPlaceholder" maxlength="160"
              role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions">
+      <button type="button" class="filter-word ai-toggle" id="btn-ai-mode" aria-pressed="false" data-i18n="aiSearchToggle">✦ AI 全网</button>
       <span id="search-result" aria-live="polite"></span>
       <div id="sort-control" role="group" aria-labelledby="sort-label">
         <span id="sort-label" data-i18n="sortLabel">排序</span>
@@ -70,8 +76,14 @@
       <button id="btn-clear-search-history" type="button" tabindex="-1" data-i18n="clearSearchHistory" hidden>清空历史</button>
     </div>
 
+    <div id="ai-banner" hidden>
+      <span id="ai-banner-text"></span>
+      <button type="button" id="btn-ai-exit" data-i18n="aiExitResults">退出 AI 结果 ×</button>
+    </div>
+
     <footer id="status-strip">
       <span id="engine-status" role="status" hidden></span>
+      <button type="button" class="strip-motion-badge" id="motion-active-badge" hidden></button>
       <span class="spacer"></span>
       <button class="strip-action" id="btn-back-to-top" data-i18n="backToTop" hidden>回顶部</button>
       <button class="strip-action" id="btn-wallhaven-more" data-i18n="moreWallhaven" hidden>更多壁纸</button>
@@ -82,15 +94,18 @@
   </div>
 
   <main id="grid"></main>
+  <div id="grid-progress" aria-hidden="true"><div id="grid-progress-thumb"></div></div>
   <div id="empty-state"><span data-i18n="nothing">这一版没有内容</span></div>
   <div id="fatal"><strong data-i18n="bootFailed">启动失败</strong><span id="fatal-detail"></span></div>
 
   <section id="detail" aria-hidden="true">
     <div id="detail-visual" aria-hidden="true"><div id="detail-preview" class="preview-plane"></div></div>
     <div id="detail-veil"></div>
+    <div id="framing-hud" aria-hidden="true"></div>
     <div class="detail-chrome">
       <div class="detail-top">
         <span id="detail-index">01 / 000</span>
+        <span id="detail-hint" data-i18n="detailPureHint">按住空格纯净预览 · 0 复位构图</span>
         <span id="btn-close" data-i18n="close">关闭</span>
       </div>
       <div class="detail-copy">
@@ -104,6 +119,7 @@
         <button id="btn-rename-favorite" type="button" data-i18n="renameFavorite" hidden>重命名</button>
         <span id="btn-save" data-i18n="saveImageAs">导出原图</span>
         <span id="btn-source" data-i18n="sourceLink">来源 ↗</span>
+        <span class="side-sep" aria-hidden="true"></span>
         <span id="btn-lock">锁屏 / 关</span>
         <span id="btn-monitor">显示器 / 全部</span>
         <button id="btn-save-framing" type="button" data-i18n="saveFraming">保存构图</button>
@@ -144,6 +160,23 @@
         <div class="settings-section">
           <h3 data-i18n="onlineSources">在线图源</h3>
           <div id="sources-report"></div>
+        </div>
+
+        <div class="settings-section">
+          <h3 data-i18n="aiSearchTitle">AI 全网搜索</h3>
+          <p class="settings-note" data-i18n="aiSearchNote">配置任意 OpenAI 兼容接口（DeepSeek / 硅基流动 / OpenRouter / 中转站）或 Google Gemini API，用自然语言即可全网搜高清壁纸。凭据仅保存在本机。</p>
+          <div class="language-row" id="ai-provider-row">
+            <span class="ai-provider-word is-active" data-provider="openai">OPENAI 兼容</span>
+            <span class="ai-provider-word" data-provider="gemini">GOOGLE GEMINI</span>
+          </div>
+          <input class="cred" id="cred-ai-base" type="text" data-i18n-ph="aiBaseUrlPh" placeholder="API BASE URL（留空使用官方默认，如 https://api.deepseek.com/v1）">
+          <input class="cred" id="cred-ai-model" type="text" data-i18n-ph="aiModelPh" placeholder="MODEL（如 deepseek-chat / gpt-4o-mini / gemini-2.5-flash）">
+          <input class="cred" id="cred-ai-key" type="password" data-i18n-ph="aiApiKeyPh" placeholder="AI API KEY">
+          <input class="cred" id="cred-serper" type="password" data-i18n-ph="serperKeyPh" placeholder="SERPER API KEY（Google 全网搜图，可选）">
+          <input class="cred" id="cred-brave" type="password" data-i18n-ph="braveKeyPh" placeholder="BRAVE SEARCH API KEY（可选）">
+          <div class="settings-action" id="btn-save-ai" data-i18n="saveAiConfig">保存 AI 配置</div>
+          <div class="settings-action" id="btn-test-ai" data-i18n="testAiConnection">测试 AI 连接</div>
+          <div class="settings-info" id="ai-test-status" role="status"></div>
         </div>
 
         <div class="settings-section">
@@ -227,7 +260,8 @@
     </div>
     <footer class="motion-footer">
       <label for="motion-monitor" data-i18n="monitor">显示器</label>
-      <select id="motion-monitor"></select>
+      <select id="motion-monitor" hidden></select>
+      <div id="motion-monitor-list" role="group" aria-label="显示器"></div>
       <span id="motion-status" role="status"></span>
       <button type="button" id="btn-motion-play" data-i18n="apply" disabled>应用到桌面</button>
       <button type="button" id="btn-motion-stop" data-i18n="motionStop" disabled>停止播放</button>

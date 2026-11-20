@@ -4,13 +4,47 @@
   const panel = $('#motion-library');
   const video = $('#motion-preview');
   const monitor = $('#motion-monitor');
+  const monitorList = $('#motion-monitor-list');
+  const badge = $('#motion-active-badge');
   const list = $('#motion-items');
   let source = 'featured';
   let local = [], active = [], displays = [];
   let selected = null, busy = false, feedback = '';
-  let searchRequest = 0, previewRequest = 0;
+  let searchRequest = 0, previewRequest = 0, closeTimer = 0;
 
-  const isOpen = () => panel.classList.contains('is-open');
+  const isOpen = () => panel.classList.contains('is-open') && !panel.classList.contains('is-closing');
+
+  function paintActiveBadge() {
+    if (!badge) return;
+    if (!active.length) {
+      badge.hidden = true;
+      badge.textContent = '';
+      return;
+    }
+    const first = active[0];
+    const suffix = active.length > 1 ? ` +${active.length - 1}` : '';
+    badge.textContent = `◆ ${t('motionLibrary')} · ${first.title}${suffix}`;
+    badge.hidden = false;
+  }
+
+  function paintMonitorButtons() {
+    if (!monitorList) return;
+    monitorList.replaceChildren(...displays.map(display => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'motion-monitor-btn' + (display.id === monitor.value ? ' is-active' : '');
+      btn.setAttribute('aria-pressed', String(display.id === monitor.value));
+      btn.textContent = `${pad(display.index + 1, 2)} · ${display.width}×${display.height}`;
+      btn.addEventListener('click', () => {
+        if (monitor.value === display.id) return;
+        monitor.value = display.id;
+        feedback = '';
+        paintMonitorButtons();
+        updateControls();
+      });
+      return btn;
+    }));
+  }
 
   function updateControls() {
     const connected = displays.find(display => display.id === monitor.value);
@@ -20,6 +54,7 @@
     $('#motion-status').textContent = feedback || (playing ? `${playing} · ${current.title}` : '');
     $('#btn-motion-play').disabled = busy || !selected || !connected;
     $('#btn-motion-stop').disabled = busy || !current;
+    paintActiveBadge();
   }
 
   function updateDisplays(monitors) {
@@ -32,6 +67,7 @@
       return option;
     }));
     if (displays.some(display => display.id === previous)) monitor.value = previous;
+    paintMonitorButtons();
     updateControls();
   }
 
@@ -123,8 +159,11 @@
 
   async function open() {
     if (isOpen()) return;
+    clearTimeout(closeTimer);
+    closeTimer = 0;
     $('#search').blur();
     $('#chrome').inert = $('#grid').inert = true;
+    panel.classList.remove('is-closing');
     panel.classList.add('is-open');
     panel.setAttribute('aria-hidden', 'false');
     $('#btn-motion-close').focus();
@@ -141,15 +180,25 @@
   }
 
   function close() {
+    if (!panel.classList.contains('is-open')) return;
     searchRequest++;
     clearPreview();
-    panel.classList.remove('is-open');
-    panel.setAttribute('aria-hidden', 'true');
-    $('#chrome').inert = $('#grid').inert = false;
-    $('#btn-motion').focus();
+    clearTimeout(closeTimer);
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const finish = () => {
+      closeTimer = 0;
+      panel.classList.remove('is-open', 'is-closing');
+      panel.setAttribute('aria-hidden', 'true');
+      $('#chrome').inert = $('#grid').inert = false;
+      $('#btn-motion').focus();
+    };
+    if (reduced) { finish(); return; }
+    panel.classList.add('is-closing');
+    closeTimer = setTimeout(finish, 340);
   }
 
   $('#btn-motion').addEventListener('click', open);
+  badge?.addEventListener('click', open);
   $('#btn-motion-close').addEventListener('click', close);
   $('#btn-motion-local').addEventListener('click', () => changeSource('local'));
   $('#btn-motion-featured').addEventListener('click', () => changeSource('featured'));
@@ -179,6 +228,9 @@
     if (isOpen() && status.ok) updateDisplays(status.monitors || []);
   });
   api.on('motion:active', entries => { active = entries; updateControls(); });
+  api.motionLibrary().then(result => {
+    if (result?.active) { active = result.active; paintActiveBadge(); }
+  }).catch(() => {});
   document.addEventListener('keydown', event => {
     if (isOpen() && event.key === 'Escape' && !event.isComposing) {
       event.preventDefault();

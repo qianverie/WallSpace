@@ -134,9 +134,15 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
       changes.push({ id: monitor.id, wallpaper: output });
     }
 
+    const customViewport = options.viewport && Number.isFinite(options.viewport.width) &&
+      Number.isFinite(options.viewport.height) && options.viewport.width > 0 && options.viewport.height > 0
+      ? options.viewport : null;
     for (const monitor of targets) {
       const bounds = span ? allBounds : monitor;
-      await add(monitor, source, imagePlacement(image, bounds, style, framing, framingViewport(bounds)), 0);
+      const viewport = customViewport
+        ? framingViewport(bounds, customViewport.width, customViewport.height)
+        : framingViewport(bounds);
+      await add(monitor, source, imagePlacement(image, bounds, style, framing, viewport), 0);
     }
     if (selected && normalizePosition) {
       for (const monitor of before.monitors.filter(m => m.id !== selected)) {

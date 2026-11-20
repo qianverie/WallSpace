@@ -33,7 +33,13 @@ const WALLHAVEN_GENRES = {
   architecture: { tag: 'architecture' }, space: { tag: 'space' }, abstract: { tag: 'abstract' }
 };
 const WALLHAVEN_MIN_EDGE = { hd: 720, fhd: 1080, qhd: 1440, uhd: 2160 };
-const WALLHAVEN_RATIOS = { '16:9': 'landscape', '4:3': 'landscape', ultrawide: 'landscape', portrait: 'portrait' };
+const WALLHAVEN_RATIOS = {
+  '16:9': '16x9',
+  '16:10': '16x10',
+  '4:3': '4x3,5x4,3x2',
+  ultrawide: '21x9,32x9,48x9',
+  portrait: 'portrait'
+};
 
 const WALLS_OWNER = 'dharmx';
 const WALLS_REPO = 'walls';
@@ -111,7 +117,7 @@ function titleCase(s) { return s.replace(/\b[a-z]/g, c => c.toUpperCase()); }
 function ratioOf(w, h) {
   if (!w || !h) return null;
   const r = w / h;
-  return r > 2 ? 'ultrawide' : r > 1.6 ? '16:9' : r > 1.25 ? '4:3' : r > .9 ? '1:1' : 'portrait';
+  return r >= 2 ? 'ultrawide' : r >= 1.68 ? '16:9' : r >= 1.54 ? '16:10' : r >= 1.2 ? '4:3' : r >= .9 ? '1:1' : 'portrait';
 }
 
 // ---------- Bing China daily wallpaper ----------
