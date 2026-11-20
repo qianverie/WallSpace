@@ -8,7 +8,11 @@
 
 ![WALL／SCAPE 画报式壁纸浏览 — 太空题材](./docs/screenshots/gallery-space.jpg)
 
-| 真屏比例构图与细节预览 | 桌面壁纸自适应毛玻璃画廊 |
+| AI 全网多引擎智能搜图（免 Key 聚合） | 真实屏幕 16:10 构图缩放与三分辅助线 |
+| :---: | :---: |
+| ![AI 全网多引擎智能搜图](./docs/screenshots/ai-search-cat.jpg) | ![真屏构图缩放与三分网格](./docs/screenshots/framing-grid.jpg) |
+
+| 画报式细节预览与适配模式 | 桌面壁纸自适应毛玻璃画廊 |
 | :---: | :---: |
 | ![真屏比例构图预览](./docs/screenshots/detail-framing.jpg) | ![动漫题材画廊与取景聚焦](./docs/screenshots/gallery-anime.jpg) |
 
