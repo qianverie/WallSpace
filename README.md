@@ -4,6 +4,14 @@
 
 > An editorial full-screen wallpaper studio for Windows — adaptive display framing, GPU-accelerated preview zoom, AI-assisted global web search, and live desktop wallpapers with zero npm dependencies.
 
+## 界面预览
+
+![WALL／SCAPE 画报式壁纸浏览 — 太空题材](./docs/screenshots/gallery-space.jpg)
+
+| 真屏比例构图与细节预览 | 桌面壁纸自适应毛玻璃画廊 |
+| :---: | :---: |
+| ![真屏比例构图预览](./docs/screenshots/detail-framing.jpg) | ![动漫题材画廊与取景聚焦](./docs/screenshots/gallery-anime.jpg) |
+
 ---
 
 ## 核心特性
