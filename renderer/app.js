@@ -309,7 +309,7 @@ const S = {
   scope: 'all', genre: 'all', tone: 'any', ratio: 'any', resolution: 'any', sort: 'relevance', query: '',
   filtered: [], current: null, currentCard: null, previewImage: null, framing: DEFAULT_FRAMING,
   style: 'fill', monitorId: null, monitors: [], syncLock: false, busy: false, undoAvailable: false,
-  aiMode: false, aiResults: null, aiMeta: null, aiBusy: false, aiProviderDraft: 'openai', aiFilterActive: false
+  aiMode: false, aiResults: null, aiMeta: null, aiBusy: false, aiProviderDraft: 'openai', aiFilterActive: false, aiSortActive: false
 };
 
 let toastTimer = null, refreshing = false;
@@ -669,7 +669,7 @@ function buildFilters() {
         const submitted = Boolean(onlineSearchKey);
         if (restart) resetOnlineSearch();
         S[key] = value;
-        if (S.aiResults && ['tone', 'ratio', 'resolution'].includes(key)) S.aiFilterActive = true;
+        if (S.aiResults && ['genre', 'tone', 'ratio', 'resolution'].includes(key)) S.aiFilterActive = true;
         persistFilters();
         $('#grid').scrollTop = 0;
         buildFilters(); applyFilters(); render();
@@ -751,6 +751,7 @@ function exitAiResults() {
   S.aiResults = null;
   S.aiMeta = null;
   S.aiFilterActive = false;
+  S.aiSortActive = false;
   paintAiBanner();
   paintClearFilters();
   $('#grid').scrollTop = 0;
@@ -791,6 +792,7 @@ async function submitAiSearch() {
   S.aiResults = result.items || [];
   S.aiMeta = result;
   S.aiFilterActive = false;
+  S.aiSortActive = false;
   paintAiBanner();
   paintClearFilters();
   $('#grid').scrollTop = 0;
@@ -863,6 +865,7 @@ function scopedItems(includeOnline = false) {
 function applyFilters() {
   if (S.aiResults) {
     S.filtered = S.aiFilterActive ? S.aiResults.filter(item => {
+      if (S.genre !== 'all' && !wallpaperSearch.matchesGenre(item, S.genre)) return false;
       if (S.tone !== 'any' && (item.tone || 'neutral') !== S.tone) return false;
       if (S.ratio !== 'any') {
         const itemRatio = (item.width && item.height) ? ratioOf(item.width, item.height) : item.ratio;
@@ -879,8 +882,8 @@ function applyFilters() {
       }
       return true;
     }) : S.aiResults.slice();
-    if (S.sort === 'popular') S.filtered.sort(wallpaperSearch.comparePopularity);
-    else if (S.sort === 'newest') S.filtered.sort(wallpaperSearch.compareDate);
+    if (S.aiSortActive && S.sort === 'popular') S.filtered.sort(wallpaperSearch.comparePopularity);
+    else if (S.aiSortActive && S.sort === 'newest') S.filtered.sort(wallpaperSearch.compareDate);
     return;
   }
   const words = wallpaperSearch.terms(S.query);
@@ -2041,6 +2044,7 @@ function bind() {
     const submitted = Boolean(onlineSearchKey);
     if (restart) resetOnlineSearch();
     S.sort = sort;
+    if (S.aiResults) S.aiSortActive = sort !== 'relevance';
     paintSort();
     persistFilters();
     $('#grid').scrollTop = 0;

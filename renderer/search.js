@@ -13,7 +13,7 @@ const wallpaperSearch = (() => {
   const photoSources = new Set(['unsplash', 'pexels']);
   const genres = {
     landscape: /\b(landscapes?|scenery|mountains?|forests?|lakes?|oceans?|rivers?|beaches|waterfalls?|deserts?|sunsets?|sunrises?)\b|风景|風景|山脉|山脈|森林|树林|海洋|山水|瀑布|日落|日出|湖泊/u,
-    animals: /\b(animals?|wildlife|cats?|dogs?|birds?|fox(?:es)?|wolves|dolphins?|lions?|tigers?)\b|动物|動物|野生动物|猛兽|海豚|猫|鳥|鲸/u,
+    animals: /\b(animals?|wildlife|cats?|kittens?|felines?|dogs?|pupp(?:y|ies)|shiba|birds?|owls?|eagles?|fox(?:es)?|wolves|wolf|dolphins?|whales?|lions?|tigers?|pandas?|bears?|deer|rabbits?|bunn(?:y|ies)|butterfl(?:y|ies))\b|动物|動物|野生动物|猛兽|海豚|鲸|猫|猫咪|小猫|狗|小狗|柴犬|鸟|鳥|狐狸|狼|虎|狮|熊猫|鹿|兔/u,
     architecture: /\b(architecture|cityscapes?|cities|city|buildings?|skyscrapers?|bridges?|castles?)\b|建筑|建築|城市|都市|楼宇|桥梁|天际线|街景/u,
     space: /\b(astronomy|galax(?:y|ies)|nebulae?|planets?|stars?|milky way|outer space)\b|太空|宇宙|星系|星云|行星|星空|銀河/u,
     abstract: /\b(abstract|minimal(?:ism|ist)?|geometric|monochrome|gradients?|fractal)\b|抽象|极简|極簡|几何|幾何|渐变|漸變|ミニマル/u

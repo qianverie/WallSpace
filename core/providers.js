@@ -28,9 +28,13 @@ const WALLHAVEN_TTL = 15 * 60 * 1000;
 const WALLHAVEN_CACHE_LIMIT = 720;
 const WALLHAVEN_CACHE_VERSION = 2;
 const WALLHAVEN_GENRES = {
-  anime: { categories: '010' }, people: { categories: '001', tag: 'photography' },
-  landscape: { tag: 'landscape' }, animals: { tag: 'animals' },
-  architecture: { tag: 'architecture' }, space: { tag: 'space' }, abstract: { tag: 'abstract' }
+  anime: { categories: '010' },
+  people: { categories: '001', tag: 'photography' },
+  landscape: { categories: '100', tag: 'landscape' },
+  animals: { categories: '100', tag: 'animals' },
+  architecture: { categories: '100', tag: 'architecture' },
+  space: { categories: '100', tag: 'space' },
+  abstract: { categories: '100', tag: 'abstract' }
 };
 const WALLHAVEN_MIN_EDGE = { hd: 720, fhd: 1080, qhd: 1440, uhd: 2160 };
 const WALLHAVEN_RATIOS = {
@@ -411,7 +415,9 @@ async function wallhavenPage({ query = '', page = 1, genre = 'all', ratio, resol
         !/^https:\/\/w\.wallhaven\.cc\/full\//.test(image.path || '') ||
         !/^https:\/\/th\.wallhaven\.cc\//.test(image.thumbs?.small || '') ||
         !(image.dimension_x >= 1920 && image.dimension_y >= 1080)) return [];
-    if (theme?.categories && image.category !== genre) return [];
+    if (theme?.categories === '010' && image.category !== 'anime') return [];
+    if (theme?.categories === '001' && image.category !== 'people') return [];
+    if (theme?.categories === '100' && image.category !== 'general') return [];
     const imageRatio = ratioOf(image.dimension_x, image.dimension_y);
     if (Math.min(image.dimension_x, image.dimension_y) < minEdge ||
         (ratio && ratio !== 'any' && imageRatio !== ratio)) return [];

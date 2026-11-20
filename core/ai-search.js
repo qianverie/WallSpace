@@ -203,25 +203,85 @@ async function testConnection(credentials, fetchFn = null) {
   }
 }
 
+const CN_EN_LEXICON = [
+  ['赛博朋克', 'cyberpunk'], ['二次元', 'anime'], ['吉卜力', 'ghibli'], ['新海诚', 'makoto shinkai'],
+  ['水墨画', 'chinese ink painting'], ['水彩', 'watercolor'], ['油画', 'oil painting'], ['插画', 'illustration'],
+  ['极简', 'minimalist'], ['抽象', 'abstract'], ['古风', 'ancient chinese'], ['国风', 'chinese style'],
+  ['科幻', 'sci-fi'], ['机甲', 'mecha'], ['蒸汽波', 'vaporwave'], ['复古', 'retro vintage'],
+  ['暗黑', 'dark'], ['霓虹', 'neon'], ['像素', 'pixel art'], ['治愈', 'cozy peaceful'],
+  ['小猫', 'kitten cat'], ['猫咪', 'cat'], ['布偶猫', 'ragdoll cat'], ['橘猫', 'orange cat'], ['黑猫', 'black cat'], ['猫', 'cat'],
+  ['柴犬', 'shiba inu dog'], ['柯基', 'corgi dog'], ['金毛', 'golden retriever'], ['小狗', 'puppy dog'], ['狗', 'dog'],
+  ['狐狸', 'fox'], ['雪狐', 'arctic fox'], ['白狼', 'white wolf'], ['狼', 'wolf'], ['老虎', 'tiger'], ['狮子', 'lion'],
+  ['熊猫', 'panda'], ['鲸鱼', 'whale'], ['海豚', 'dolphin'], ['水母', 'jellyfish'], ['猫头鹰', 'owl'],
+  ['老鹰', 'eagle'], ['蝴蝶', 'butterfly'], ['兔子', 'rabbit'], ['鹿', 'deer'], ['鸟', 'bird'], ['动物', 'animal wildlife'],
+  ['樱花', 'sakura cherry blossom'], ['桃花', 'peach blossom'], ['向日葵', 'sunflower'], ['玫瑰', 'rose'], ['花海', 'flower field'], ['花', 'flower'],
+  ['雪山', 'snow mountain'], ['富士山', 'mount fuji'], ['山脉', 'mountain'], ['森林', 'forest'], ['竹林', 'bamboo forest'],
+  ['大海', 'ocean sea'], ['海边', 'coast beach'], ['海浪', 'ocean wave'], ['海', 'ocean'],
+  ['日落', 'sunset'], ['夕阳', 'sunset'], ['晚霞', 'sunset sky'], ['日出', 'sunrise'], ['云海', 'sea of clouds'], ['云', 'clouds'],
+  ['星空', 'starry night sky'], ['银河', 'milky way galaxy'], ['星云', 'nebula'], ['极光', 'aurora'], ['月亮', 'moon'], ['宇宙', 'space galaxy'], ['太空', 'outer space'],
+  ['雨夜', 'rainy night'], ['下雨', 'rain'], ['下雪', 'snow'], ['雪景', 'winter snow'], ['冬天', 'winter'], ['秋天', 'autumn'], ['枫叶', 'autumn maple'], ['夏天', 'summer'], ['春天', 'spring'],
+  ['东京', 'tokyo'], ['京都', 'kyoto'], ['上海', 'shanghai'], ['香港', 'hong kong'], ['纽约', 'new york'], ['巴黎', 'paris'],
+  ['城市', 'cityscape'], ['夜景', 'night city'], ['街道', 'street'], ['建筑', 'architecture'], ['城堡', 'castle'], ['桥梁', 'bridge'],
+  ['风景', 'landscape scenery'], ['自然', 'nature'], ['沙漠', 'desert'], ['瀑布', 'waterfall'], ['湖泊', 'lake'],
+  ['跑车', 'sports car'], ['汽车', 'car'], ['摩托', 'motorcycle'], ['飞机', 'aircraft'], ['火车', 'train'], ['电车', 'train'],
+  ['动漫', 'anime'], ['少女', 'girl'], ['美女', 'portrait woman'], ['明星', 'celebrity portrait'], ['人物', 'portrait']
+];
+
+const GENRE_HINTS = {
+  anime: { en: 'anime', zh: '动漫' },
+  people: { en: 'portrait photography', zh: '人像摄影' },
+  landscape: { en: 'landscape scenery', zh: '风景' },
+  animals: { en: 'animal photography', zh: '动物' },
+  architecture: { en: 'architecture cityscape', zh: '建筑' },
+  space: { en: 'space astronomy', zh: '太空' },
+  abstract: { en: 'abstract minimal', zh: '抽象极简' }
+};
+
+function hasCjk(text) {
+  return /[\u4e00-\u9fff\u3040-\u30ff]/.test(String(text || ''));
+}
+
+function translateZhToEn(raw) {
+  let text = String(raw || '').trim();
+  const translated = [];
+  for (const [cn, en] of CN_EN_LEXICON) {
+    if (text.includes(cn)) {
+      translated.push(en);
+      text = text.split(cn).join(' ');
+    }
+  }
+  const ascii = text.replace(/[^\x20-\x7e]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (ascii) translated.push(ascii);
+  return [...new Set(translated.join(' ').split(/\s+/).filter(Boolean))].join(' ');
+}
+
 function fallbackPlan(prompt, context = {}) {
   const clean = String(prompt || '').trim();
   const ratio = context.ratio && context.ratio !== 'any' ? context.ratio : 'any';
+  const genre = context.genre && context.genre !== 'all' ? context.genre : 'all';
+  const genreHint = GENRE_HINTS[genre] || null;
   const ratioHint = ratio === '16:10' ? '16:10' : ratio === 'ultrawide' ? 'ultrawide' : ratio === 'portrait' ? 'vertical' : '4k';
-  const hasCjk = /[\u4e00-\u9fff\u3040-\u30ff]/.test(clean);
-  const webQueries = [
-    `${clean} ${ratioHint} wallpaper`,
-    hasCjk ? `${clean} 4K 高清壁纸` : `${clean} 4k desktop wallpaper`
-  ];
-  const zhQueries = [
-    hasCjk ? `${clean} 4K 高清壁纸` : `${clean} 4K 壁纸`
-  ];
+  const enBase = hasCjk(clean) ? translateZhToEn(clean) : clean;
+  const enWithGenre = enBase
+    ? (genreHint && !enBase.toLowerCase().includes(genreHint.en.split(' ')[0]) ? `${enBase} ${genreHint.en}` : enBase)
+    : (genreHint ? genreHint.en : '');
+
+  const webQueries = [];
+  if (enBase) webQueries.push(`${enBase} ${ratioHint} wallpaper`);
+  if (enWithGenre && enWithGenre !== enBase) webQueries.push(`${enWithGenre} wallpaper 4k`);
+  if (!webQueries.length) webQueries.push(`${clean} ${ratioHint} wallpaper`);
+
+  const zhBase = genreHint && !clean.includes(genreHint.zh) ? `${clean} ${genreHint.zh}` : clean;
+  const zhQueries = [...new Set([`${zhBase} 4K 高清壁纸`, `${clean} 4K 壁纸`])];
+  const wallhavenQueries = enBase ? [enBase] : [];
+
   return {
     summary: clean,
     webQueries: [...new Set(webQueries)].slice(0, 2),
-    zhQueries,
-    wallhavenQueries: [clean],
-    tags: clean.split(/[\s,，、/]+/).filter(Boolean).slice(0, 6),
-    genre: context.genre || 'all',
+    zhQueries: zhQueries.slice(0, 2),
+    wallhavenQueries,
+    tags: [...new Set([...(enBase ? enBase.toLowerCase().split(/\s+/) : []), ...clean.split(/[\s,，、/]+/)])].filter(Boolean).slice(0, 6),
+    genre,
     tone: context.tone || 'any',
     ratio
   };
@@ -601,8 +661,10 @@ async function search({ prompt, credentials = {}, context = {}, providers = null
   const secondaryWebQuery = plan.webQueries[1] || '';
   const zhQuery = (plan.zhQueries && plan.zhQueries[0]) || `${cleanPrompt} 4K壁纸`;
   const zhQuery2 = (plan.zhQueries && plan.zhQueries[1]) || '';
-  const whQuery = plan.wallhavenQueries[0] || cleanPrompt;
-  const whQuery2 = plan.wallhavenQueries[1] || '';
+  const whQuery = (plan.wallhavenQueries && plan.wallhavenQueries[0]) || '';
+  const whQuery2 = (plan.wallhavenQueries && plan.wallhavenQueries[1]) || '';
+  const enReady = Boolean(whQuery && !hasCjk(whQuery));
+  const activeGenre = context.genre && context.genre !== 'all' ? context.genre : (plan.genre || 'all');
   const targetRatio = plan.ratio !== 'any' ? plan.ratio : 'any';
   const preferredRatio = context.displayRatioBucket || 'any';
 
@@ -626,26 +688,29 @@ async function search({ prompt, credentials = {}, context = {}, providers = null
   if (secondaryWebQuery && secondaryWebQuery.toLowerCase() !== primaryWebQuery.toLowerCase()) {
     addTask('Bing', searchBingWeb(secondaryWebQuery, targetRatio, fetchFn));
   }
-  addTask('Openverse', searchOpenverse(whQuery, targetRatio, fetchFn));
-  addTask('Commons', searchCommonsWeb(whQuery, targetRatio, fetchFn));
+  if (enReady) {
+    addTask('Openverse', searchOpenverse(whQuery, targetRatio, fetchFn));
+    addTask('Commons', searchCommonsWeb(whQuery, targetRatio, fetchFn));
+  }
 
-  if (providers && typeof providers.wallhavenPage === 'function') {
+  if (enReady && providers && typeof providers.wallhavenPage === 'function') {
     addTask('Wallhaven', (async () => {
       const first = await providers.wallhavenPage({
         query: whQuery,
         page: 1,
-        genre: plan.genre || 'all',
+        genre: activeGenre,
         ratio: targetRatio,
         resolution: 'any',
         sort: 'relevance'
       }).then(r => r.items || []).catch(() => []);
       if (first.length >= 12) return first;
-      // Broaden automatically so niche prompts still return plenty of Wallhaven results.
-      const fallbackQ = whQuery2 || whQuery;
+      // Broaden ratio/query while STRICTLY preserving the user's selected genre
+      // so anime never leaks into Animals / Landscape / Architecture.
+      const fallbackQ = (whQuery2 && !hasCjk(whQuery2)) ? whQuery2 : whQuery;
       const broad = await providers.wallhavenPage({
         query: fallbackQ,
         page: 1,
-        genre: 'all',
+        genre: activeGenre,
         ratio: 'any',
         resolution: 'any',
         sort: 'relevance'
@@ -653,8 +718,8 @@ async function search({ prompt, credentials = {}, context = {}, providers = null
       return first.concat(broad);
     })());
   }
-  if (providers && typeof providers.searchOnline === 'function' && (credentials.unsplash || credentials.pexels)) {
-    addTask('Unsplash/Pexels', providers.searchOnline(credentials, whQuery, 'all', plan.genre || 'all', {
+  if (enReady && providers && typeof providers.searchOnline === 'function' && (credentials.unsplash || credentials.pexels)) {
+    addTask('Unsplash/Pexels', providers.searchOnline(credentials, whQuery, 'all', activeGenre, {
       ratio: targetRatio, resolution: 'any'
     }).then(r => (r.items || []).filter(i => i.source === 'unsplash' || i.source === 'pexels')));
   }
@@ -672,6 +737,9 @@ async function search({ prompt, credentials = {}, context = {}, providers = null
       seen.add(key);
       if (plan.tags?.length && (!item.tags || !item.tags.length)) {
         item.tags = plan.tags.slice(0, 6);
+      }
+      if (activeGenre !== 'all' && (!item.genres || !item.genres.length)) {
+        item.genres = [activeGenre];
       }
       if (plan.tone && plan.tone !== 'any' && (!item.tone || item.tone === 'neutral')) {
         item.tone = plan.tone;
