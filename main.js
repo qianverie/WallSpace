@@ -6,6 +6,7 @@ const {
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
+const { Readable } = require('node:stream');
 const { Store } = require('./core/store');
 const providers = require('./core/providers');
 const wallpaper = require('./core/wallpaper');
@@ -202,8 +203,13 @@ function setWindowMode(mode) {
 }
 
 function showWindow() {
-  if (!win) return;
+  if (!win || win.isDestroyed()) {
+    createWindow();
+    return;
+  }
+  if (win.isMinimized()) win.restore();
   if (!win.isVisible()) win.show();
+  try { win.moveTop(); } catch (e) { /* ignore */ }
   win.focus();
 }
 
@@ -240,6 +246,18 @@ function registerShortcuts() {
 /* ---------- image materialisation ---------- */
 const imageDownloads = new Map();
 
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const CACHE_GC_INTERVAL_MS = 12 * 60 * 60 * 1000;
+let cacheGcStartupTimer = null;
+let cacheGcInterval = null;
+
+function touchFile(file) {
+  try {
+    const now = new Date();
+    fs.utimesSync(file, now, now);
+  } catch (e) { /* ignore */ }
+}
+
 function downloadImage(url, dest) {
   if (!imageDownloads.has(dest)) {
     const browserSession = win?.webContents.session || session.defaultSession;
@@ -273,6 +291,8 @@ async function findImageSource(item, progress) {
       if (!fs.existsSync(dest)) {
         progress?.('download');
         await downloadImage(url, dest);
+      } else {
+        touchFile(dest);
       }
       source = dest;
       cachedDownload = true;
@@ -313,6 +333,7 @@ async function normalizeImage({ source, cachedDownload }) {
   const key = crypto.createHash('sha1').update(normalizedBytes).digest('hex').slice(0, 18);
   const normalized = path.join(CACHE, 'applied-' + key + '.png');
   if (!fs.existsSync(normalized)) fs.writeFileSync(normalized, normalizedBytes);
+  else touchFile(normalized);
   return { source: normalized, ...img.getSize() };
 }
 
@@ -342,15 +363,47 @@ const motion = createMotion({
   }
 });
 
-function cacheStats() {
+function cacheStats(activeDesktop = null) {
   let bytes = 0, count = 0;
-  for (const f of fs.readdirSync(CACHE)) {
-    try {
-      const st = fs.statSync(path.join(CACHE, f));
-      if (st.isFile()) { bytes += st.size; count++; }
-    } catch (e) { /* file vanished */ }
+  const pinned = desktop.pinnedFiles(activeDesktop);
+  if (fs.existsSync(CACHE)) {
+    for (const f of fs.readdirSync(CACHE)) {
+      const p = path.join(CACHE, f);
+      if (pinned.has(path.resolve(p).toLowerCase())) continue;
+      try {
+        const st = fs.statSync(p);
+        if (st.isFile()) { bytes += st.size; count++; }
+      } catch (e) { /* file vanished */ }
+    }
   }
-  return { bytes, count };
+  const composed = desktop.reclaimableImageStats(activeDesktop);
+  return { bytes: bytes + composed.bytes, count: count + composed.count };
+}
+
+async function pruneCaches(maxAgeMs = CACHE_TTL_MS) {
+  const activeDesktop = await desktop.read().catch(() => null);
+  const pinned = desktop.pinnedFiles(activeDesktop);
+  const now = Date.now();
+  let removed = 0;
+  if (fs.existsSync(CACHE)) {
+    for (const f of fs.readdirSync(CACHE)) {
+      const p = path.join(CACHE, f);
+      if (pinned.has(path.resolve(p).toLowerCase())) continue;
+      try {
+        const st = fs.statSync(p);
+        if (!st.isFile()) continue;
+        if (maxAgeMs > 0 && now - st.mtimeMs < maxAgeMs) continue;
+        fs.unlinkSync(p);
+        removed++;
+      } catch (e) { /* in use or vanished */ }
+    }
+  }
+  // Only prune data/desktop/images when we have confirmed active monitor wallpapers
+  // (or on explicit manual clear where pinned still protects lastWallpaper/undo/profiles).
+  if (activeDesktop || maxAgeMs === 0) {
+    removed += desktop.pruneImages({ maxAgeMs, activeDesktop }).removed;
+  }
+  return Object.assign({ ok: true, removed }, cacheStats(activeDesktop));
 }
 
 /* ---------- apply ---------- */
@@ -623,7 +676,7 @@ ipcMain.handle('window:mode', () => ({ mode: windowMode }));
 ipcMain.handle('settings:autostart', (_e, { enabled } = {}) => {
   const on = Boolean(enabled);
   try {
-    app.setLoginItemSettings({ openAtLogin: on, path: process.execPath, args: [ROOT] });
+    app.setLoginItemSettings({ openAtLogin: on, path: process.execPath, args: IN_ASAR ? [] : [ROOT] });
   } catch (e) {
     return { ok: false, enabled: on, actual: false, error: e.message };
   }
@@ -633,15 +686,11 @@ ipcMain.handle('settings:autostart', (_e, { enabled } = {}) => {
   return { ok: true, enabled: on, actual };
 });
 
-ipcMain.handle('cache:info', () => Object.assign({ ok: true }, cacheStats()));
-ipcMain.handle('cache:clear', () => {
-  let removed = 0;
-  for (const f of fs.readdirSync(CACHE)) {
-    const p = path.join(CACHE, f);
-    try { if (fs.statSync(p).isFile()) { fs.unlinkSync(p); removed++; } } catch (e) { /* in use */ }
-  }
-  return Object.assign({ ok: true, removed }, cacheStats());
+ipcMain.handle('cache:info', async () => {
+  const activeDesktop = await desktop.read().catch(() => null);
+  return Object.assign({ ok: true }, cacheStats(activeDesktop));
 });
+ipcMain.handle('cache:clear', () => pruneCaches(0));
 
 ipcMain.handle('engine:lockProbe', () => wallpaper.run('probe'));
 
@@ -700,21 +749,36 @@ if (!gotLock) {
 } else {
   app.on('second-instance', () => showWindow());
   app.whenReady().then(() => {
-    protocol.handle('wsp', req => {
+    protocol.handle('wsp', async req => {
       const url = new URL(req.url);
       if (url.hostname === 'motion') return motion.serve(req);
       const p = decodeURIComponent(url.pathname).replace(/^\//, '');
       try {
-        const buf = fs.readFileSync(p);
+        const st = await fs.promises.stat(p);
+        if (!st.isFile()) return new Response('not found', { status: 404 });
         const ext = path.extname(p).toLowerCase();
         const ct = ext === '.png' ? 'image/png'
           : ext === '.webp' ? 'image/webp'
             : ext === '.bmp' ? 'image/bmp' : 'image/jpeg';
-        return new Response(buf, { headers: { 'content-type': ct } });
+        return new Response(Readable.toWeb(fs.createReadStream(p)), {
+          headers: { 'content-type': ct, 'content-length': String(st.size) }
+        });
       } catch (e) {
         return new Response('not found', { status: 404 });
       }
     });
+    wallpaper.warmup();
+    if (!SELFTEST) {
+      cacheGcStartupTimer = setTimeout(() => {
+        cacheGcStartupTimer = null;
+        pruneCaches(CACHE_TTL_MS).catch(() => {});
+      }, 5000);
+      cacheGcStartupTimer.unref();
+      cacheGcInterval = setInterval(() => {
+        pruneCaches(CACHE_TTL_MS).catch(() => {});
+      }, CACHE_GC_INTERVAL_MS);
+      cacheGcInterval.unref();
+    }
     createWindow();
     buildTray();
     registerShortcuts();
@@ -868,6 +932,11 @@ if (!gotLock) {
   });
 }
 
-app.on('before-quit', () => motion.quit());
+app.on('before-quit', () => {
+  clearTimeout(cacheGcStartupTimer);
+  clearInterval(cacheGcInterval);
+  motion.quit();
+  wallpaper.dispose();
+});
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', e => { if (!app.isQuitting) e.preventDefault(); });

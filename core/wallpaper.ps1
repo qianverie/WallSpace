@@ -1,5 +1,5 @@
-param(
-  [ValidateSet('desktop', 'measure', 'compose', 'batch', 'status', 'monitors', 'lock', 'probe')]
+﻿param(
+  [ValidateSet('desktop', 'measure', 'compose', 'batch', 'status', 'monitors', 'lock', 'probe', 'worker')]
   [string]$Action = 'status',
   [string]$Image = '',
   [string]$PlanFile = ''
@@ -7,12 +7,15 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-# Node reads the JSON receipt as UTF-8. Keep monitor wallpaper paths intact
-# even when the Windows console uses a different code page.
-[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+# Node exchanges UTF-8 JSON receipts over stdin/stdout. Keep monitor wallpaper
+# paths intact even when the Windows console uses a different code page.
+$utf8NoBom = [Text.UTF8Encoding]::new($false)
+[Console]::InputEncoding = $utf8NoBom
+[Console]::OutputEncoding = $utf8NoBom
 
 function Emit($obj) {
-  [Console]::Out.WriteLine(($obj | ConvertTo-Json -Compress -Depth 5))
+  [Console]::Out.WriteLine(($obj | ConvertTo-Json -Compress -Depth 6))
+  [Console]::Out.Flush()
 }
 
 try {
@@ -212,137 +215,162 @@ public static class DesktopMonitors {
     return @{ position = $options[0]; color = $options[1]; flags = $options[2]; monitors = $monitors }
   }
 
-  function Read-Plan {
-    return ([IO.File]::ReadAllText($PlanFile) | ConvertFrom-Json)
+  function Read-Plan([string]$file) {
+    return ([IO.File]::ReadAllText($file) | ConvertFrom-Json)
   }
 
-  switch ($Action) {
-    'desktop' {
-      Emit @{ ok = $true; desktop = (Get-Desktop) }
-      break
-    }
-    'measure' {
-      $size = [DesktopMonitors]::Measure($Image)
-      Emit @{ ok = $true; width = $size[0]; height = $size[1] }
-      break
-    }
-    'compose' {
-      $plan = Read-Plan
-      foreach ($job in $plan.jobs) {
-        [DesktopMonitors]::Compose($job.source, $job.output, $job.width, $job.height,
-          $job.x, $job.y, $job.imageWidth, $job.imageHeight, $job.tile, $job.color)
-      }
-      Emit @{ ok = $true }
-      break
-    }
-    'batch' {
-      $plan = Read-Plan
-      $before = Get-Desktop
-      if (($before.flags -band 6) -ne 0) { throw 'Windows slideshow or remote-session wallpaper is active' }
-      $changed = $before.position -ne $plan.before.position -or $before.color -ne $plan.before.color -or
-        $before.monitors.Count -ne $plan.before.monitors.Count
-      foreach ($expected in $plan.before.monitors) {
-        $actual = $before.monitors | Where-Object { $_.id -eq $expected.id }
-        if (-not $actual -or $actual.wallpaper -ne $expected.wallpaper -or $actual.x -ne $expected.x -or
-            $actual.y -ne $expected.y -or $actual.width -ne $expected.width -or $actual.height -ne $expected.height) {
-          $changed = $true
-          break
+  function Invoke-Action([string]$Act, [string]$Img, [string]$Plan) {
+    try {
+      switch ($Act) {
+        'desktop' {
+          return @{ ok = $true; desktop = (Get-Desktop) }
         }
-      }
-      if ($changed) {
-        Emit @{ ok = $false; code = 'DESKTOP_CHANGED'; error = 'Desktop settings changed before application' }
-        break
-      }
-      foreach ($change in $plan.changes) {
-        if ($change.wallpaper -and -not (Test-Path -LiteralPath $change.wallpaper -PathType Leaf)) {
-          throw 'Wallpaper file is no longer available'
+        'measure' {
+          $size = [DesktopMonitors]::Measure($Img)
+          return @{ ok = $true; width = $size[0]; height = $size[1] }
         }
-      }
-      $attempted = @()
-      try {
-        if ($before.position -ne $plan.position) { [DesktopMonitors]::SetPosition($plan.position) }
-        foreach ($change in $plan.changes) {
-          $attempted += $change.id
-          [DesktopMonitors]::Write($change.id, $change.wallpaper)
+        'compose' {
+          $planData = Read-Plan $Plan
+          foreach ($job in $planData.jobs) {
+            [DesktopMonitors]::Compose($job.source, $job.output, $job.width, $job.height,
+              $job.x, $job.y, $job.imageWidth, $job.imageHeight, $job.tile, $job.color)
+          }
+          return @{ ok = $true }
         }
-        $after = Get-Desktop
-        if ($after.position -ne $plan.position -or $after.monitors.Count -ne $before.monitors.Count) {
-          throw 'Windows wallpaper position or display layout changed during application'
-        }
-        foreach ($monitor in $before.monitors) {
-          $change = $plan.changes | Where-Object { $_.id -eq $monitor.id }
-          $expectedPath = if ($change) { $change.wallpaper } else { $monitor.wallpaper }
-          $actual = $after.monitors | Where-Object { $_.id -eq $monitor.id }
-          if (-not $actual -or $actual.wallpaper -ne $expectedPath -or $actual.x -ne $monitor.x -or
-              $actual.y -ne $monitor.y -or $actual.width -ne $monitor.width -or $actual.height -ne $monitor.height) {
-            throw 'Wallpaper verification failed'
+        'batch' {
+          $planData = Read-Plan $Plan
+          $before = Get-Desktop
+          if (($before.flags -band 6) -ne 0) { throw 'Windows slideshow or remote-session wallpaper is active' }
+          $changed = $before.position -ne $planData.before.position -or $before.color -ne $planData.before.color -or
+            $before.monitors.Count -ne $planData.before.monitors.Count
+          foreach ($expected in $planData.before.monitors) {
+            $actual = $before.monitors | Where-Object { $_.id -eq $expected.id }
+            if (-not $actual -or $actual.wallpaper -ne $expected.wallpaper -or $actual.x -ne $expected.x -or
+                $actual.y -ne $expected.y -or $actual.width -ne $expected.width -or $actual.height -ne $expected.height) {
+              $changed = $true
+              break
+            }
+          }
+          if ($changed) {
+            return @{ ok = $false; code = 'DESKTOP_CHANGED'; error = 'Desktop settings changed before application' }
+          }
+          foreach ($change in $planData.changes) {
+            if ($change.wallpaper -and -not (Test-Path -LiteralPath $change.wallpaper -PathType Leaf)) {
+              throw 'Wallpaper file is no longer available'
+            }
+          }
+          $attempted = @()
+          try {
+            if ($before.position -ne $planData.position) { [DesktopMonitors]::SetPosition($planData.position) }
+            foreach ($change in $planData.changes) {
+              $attempted += $change.id
+              [DesktopMonitors]::Write($change.id, $change.wallpaper)
+            }
+            $after = Get-Desktop
+            if ($after.position -ne $planData.position -or $after.monitors.Count -ne $before.monitors.Count) {
+              throw 'Windows wallpaper position or display layout changed during application'
+            }
+            foreach ($monitor in $before.monitors) {
+              $change = $planData.changes | Where-Object { $_.id -eq $monitor.id }
+              $expectedPath = if ($change) { $change.wallpaper } else { $monitor.wallpaper }
+              $actual = $after.monitors | Where-Object { $_.id -eq $monitor.id }
+              if (-not $actual -or $actual.wallpaper -ne $expectedPath -or $actual.x -ne $monitor.x -or
+                  $actual.y -ne $monitor.y -or $actual.width -ne $monitor.width -or $actual.height -ne $monitor.height) {
+                throw 'Wallpaper verification failed'
+              }
+            }
+            return @{ ok = $true; desktop = $after }
+          } catch {
+            $failure = $_.Exception.Message
+            $rollback = $true
+            foreach ($monitor in $before.monitors) {
+              if ($monitor.id -notin $attempted) { continue }
+              try { [DesktopMonitors]::Write($monitor.id, $monitor.wallpaper) } catch { $rollback = $false }
+            }
+            try { if ($before.position -ne $planData.position) { [DesktopMonitors]::SetPosition($before.position) } }
+            catch { $rollback = $false }
+            return @{ ok = $false; error = $failure; rollback = $rollback }
           }
         }
-        Emit @{ ok = $true; desktop = $after }
-      } catch {
-        $failure = $_.Exception.Message
-        $rollback = $true
-        foreach ($monitor in $before.monitors) {
-          if ($monitor.id -notin $attempted) { continue }
-          try { [DesktopMonitors]::Write($monitor.id, $monitor.wallpaper) } catch { $rollback = $false }
+        'status' {
+          return @{ ok = $true; action = 'status'; engine = 'powershell'; status = (Get-Status); monitors = (Get-Monitors) }
         }
-        try { if ($before.position -ne $plan.position) { [DesktopMonitors]::SetPosition($before.position) } }
-        catch { $rollback = $false }
-        Emit @{ ok = $false; error = $failure; rollback = $rollback }
+        'monitors' {
+          return @{ ok = $true; action = 'monitors'; monitors = (Get-Monitors) }
+        }
+        'probe' {
+          # Read-only capability check: can this session load the WinRT lock-screen APIs?
+          # Nothing is written to the system here.
+          $res = @{ ok = $false; action = 'probe'; engine = 'winrt'; winrt = $false; error = $null }
+          try {
+            [void][Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
+            [void][Windows.System.UserProfile.LockScreen,Windows.System.UserProfile,ContentType=WindowsRuntime]
+            $res.winrt = $true
+            $res.ok = $true
+          } catch {
+            $res.error = "$($_.Exception.Message)"
+          }
+          return $res
+        }
+        'lock' {
+          if (-not $Img -or -not (Test-Path -LiteralPath $Img)) {
+            return @{ ok = $false; action = 'lock'; error = "file not found: $Img" }
+          }
+          $full = (Resolve-Path -LiteralPath $Img).Path
+          try {
+            [void][Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
+            [void][Windows.System.UserProfile.LockScreen,Windows.System.UserProfile,ContentType=WindowsRuntime]
+            function Wait-WinRt($op, $seconds = 8) {
+              $deadline = (Get-Date).AddSeconds($seconds)
+              while ($op.Status -eq 0 -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 80 }
+              if ($op.Status -ne 1) { throw "WinRT async status=$($op.Status)" }
+              return $op.GetResults()
+            }
+            $sfOp = [Windows.Storage.StorageFile]::GetFileFromPathAsync($full)
+            $sf = Wait-WinRt $sfOp
+            $setOp = [Windows.System.UserProfile.LockScreen]::SetImageFileAsync($sf)
+            [void](Wait-WinRt $setOp)
+            return @{ ok = $true; action = 'lock'; engine = 'winrt'; image = $full; error = $null }
+          } catch {
+            return @{
+              ok = $false; action = 'lock'; engine = 'winrt'; image = $full
+              error = "$($_.Exception.Message)"
+              hint = '锁屏个性化可能被组策略禁用，或当前会话不支持 WinRT'
+            }
+          }
+        }
+        default {
+          return @{ ok = $false; action = $Act; error = "unknown action: $Act"; engine = 'powershell' }
+        }
       }
-      break
+    } catch {
+      return @{ ok = $false; action = $Act; error = "$($_.Exception.Message)"; engine = 'powershell' }
     }
-    'status' {
-      Emit @{ ok = $true; action = 'status'; engine = 'powershell'; status = (Get-Status); monitors = (Get-Monitors) }
-      break
-    }
-    'monitors' {
-      Emit @{ ok = $true; action = 'monitors'; monitors = (Get-Monitors) }
-      break
-    }
-    'probe' {
-      # Read-only capability check: can this session load the WinRT lock-screen APIs?
-      # Nothing is written to the system here.
-      $res = @{ ok = $false; action = 'probe'; engine = 'winrt'; winrt = $false; error = $null }
+  }
+
+  if ($Action -eq 'worker') {
+    Emit @{ ready = $true }
+    while ($null -ne ($line = [Console]::In.ReadLine())) {
+      if ([string]::IsNullOrWhiteSpace($line)) { continue }
+      $reqId = $null
       try {
-        [void][Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
-        [void][Windows.System.UserProfile.LockScreen,Windows.System.UserProfile,ContentType=WindowsRuntime]
-        $res.winrt = $true
-        $res.ok = $true
-      } catch {
-        $res.error = "$($_.Exception.Message)"
-      }
-      Emit $res
-      break
-    }
-    'lock' {
-      if (-not $Image -or -not (Test-Path -LiteralPath $Image)) {
-        Emit @{ ok = $false; action = 'lock'; error = "file not found: $Image" }; break
-      }
-      $full = (Resolve-Path -LiteralPath $Image).Path
-      try {
-        [void][Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
-        [void][Windows.System.UserProfile.LockScreen,Windows.System.UserProfile,ContentType=WindowsRuntime]
-        function Wait-WinRt($op, $seconds = 8) {
-          $deadline = (Get-Date).AddSeconds($seconds)
-          while ($op.Status -eq 0 -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 80 }
-          if ($op.Status -ne 1) { throw "WinRT async status=$($op.Status)" }
-          return $op.GetResults()
+        $req = $line | ConvertFrom-Json
+        $reqId = $req.id
+        if ($req.action -eq 'quit') {
+          Emit @{ id = $reqId; ok = $true; action = 'quit' }
+          break
         }
-        $sfOp = [Windows.Storage.StorageFile]::GetFileFromPathAsync($full)
-        $sf = Wait-WinRt $sfOp
-        $setOp = [Windows.System.UserProfile.LockScreen]::SetImageFileAsync($sf)
-        [void](Wait-WinRt $setOp)
-        Emit @{ ok = $true; action = 'lock'; engine = 'winrt'; image = $full; error = $null }
+        $imgArg = if ($null -ne $req.image) { [string]$req.image } else { '' }
+        $planArg = if ($null -ne $req.planFile) { [string]$req.planFile } else { '' }
+        $res = Invoke-Action ([string]$req.action) $imgArg $planArg
+        $res['id'] = $reqId
+        Emit $res
       } catch {
-        Emit @{
-          ok = $false; action = 'lock'; engine = 'winrt'; image = $full
-          error = "$($_.Exception.Message)"
-          hint = '锁屏个性化可能被组策略禁用，或当前会话不支持 WinRT'
-        }
+        Emit @{ id = $reqId; ok = $false; error = "$($_.Exception.Message)"; engine = 'powershell' }
       }
-      break
     }
+  } else {
+    Emit (Invoke-Action $Action $Image $PlanFile)
   }
 } catch {
   Emit @{ ok = $false; action = $Action; error = "$($_.Exception.Message)"; engine = 'powershell' }

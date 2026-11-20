@@ -9,6 +9,12 @@ const WINDOWS_STYLES = ['center', 'tile', 'stretch', 'fit', 'fill', 'span'];
 const keyOf = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const samePath = (a, b) => (a || '').toLowerCase() === (b || '').toLowerCase();
 const topologyKey = monitors => keyOf(monitors.map(m => [m.id.toLowerCase(), m.x, m.y, m.width, m.height]).sort());
+function touchFile(file) {
+  try {
+    const now = new Date();
+    fs.utimesSync(file, now, now);
+  } catch (e) { /* ignore */ }
+}
 
 function sameDesktop(a, b) {
   return a.position === b.position && a.color === b.color && topologyKey(a.monitors) === topologyKey(b.monitors) &&
@@ -42,6 +48,7 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
       const hash = createHash('sha256').update(bytes).digest('hex');
       const copy = path.join(images, 'backup-' + hash + path.extname(m.wallpaper));
       if (!fs.existsSync(copy)) fs.writeFileSync(copy, bytes);
+      else touchFile(copy);
       return { ...m, backup: copy };
     }) };
   }
@@ -122,7 +129,8 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
         imageWidth: placement.width, imageHeight: placement.height, tile: placement.tile, color
       };
       const output = path.join(images, 'frame-' + keyOf([fingerprints.get(file), job]) + '.png');
-      if (!fs.existsSync(output) && !jobs.some(j => j.output === output)) jobs.push({ ...job, source: file, output });
+      if (fs.existsSync(output)) touchFile(output);
+      else if (!jobs.some(j => j.output === output)) jobs.push({ ...job, source: file, output });
       changes.push({ id: monitor.id, wallpaper: output });
     }
 
@@ -189,7 +197,64 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
     return change(current, profile.position, changes);
   }
 
-  return { read, apply, undo, saveProfile, restoreProfile };
+  function pinnedFiles(activeDesktop) {
+    const pinned = new Set();
+    const keep = p => { if (p) pinned.add(path.resolve(p).toLowerCase()); };
+    const collect = snapshot => {
+      if (!snapshot || !Array.isArray(snapshot.monitors)) return;
+      for (const m of snapshot.monitors) {
+        keep(m.wallpaper);
+        keep(m.backup);
+      }
+    };
+    collect(activeDesktop);
+    keep(store.state.settings.lastWallpaperPath);
+    const undoState = store.state.desktop.undo;
+    if (undoState) {
+      collect(undoState.before);
+      collect(undoState.after);
+    }
+    const profiles = store.state.desktop.profiles || {};
+    for (const profile of Object.values(profiles)) collect(profile);
+    return pinned;
+  }
+
+  function pruneImages({ maxAgeMs = 0, activeDesktop = null } = {}) {
+    if (!fs.existsSync(images)) return { removed: 0, freedBytes: 0 };
+    const pinned = pinnedFiles(activeDesktop);
+    const now = Date.now();
+    let removed = 0, freedBytes = 0;
+    for (const name of fs.readdirSync(images)) {
+      const full = path.join(images, name);
+      if (pinned.has(path.resolve(full).toLowerCase())) continue;
+      try {
+        const st = fs.statSync(full);
+        if (!st.isFile()) continue;
+        if (maxAgeMs > 0 && now - st.mtimeMs < maxAgeMs) continue;
+        fs.unlinkSync(full);
+        removed++;
+        freedBytes += st.size;
+      } catch (e) { /* in use or vanished */ }
+    }
+    return { removed, freedBytes };
+  }
+
+  function reclaimableImageStats(activeDesktop = null) {
+    if (!fs.existsSync(images)) return { bytes: 0, count: 0 };
+    const pinned = pinnedFiles(activeDesktop);
+    let bytes = 0, count = 0;
+    for (const name of fs.readdirSync(images)) {
+      const full = path.join(images, name);
+      if (pinned.has(path.resolve(full).toLowerCase())) continue;
+      try {
+        const st = fs.statSync(full);
+        if (st.isFile()) { bytes += st.size; count++; }
+      } catch (e) { /* vanished */ }
+    }
+    return { bytes, count };
+  }
+
+  return { read, apply, undo, saveProfile, restoreProfile, pinnedFiles, pruneImages, reclaimableImageStats };
 }
 
 module.exports = { createDesktop };
