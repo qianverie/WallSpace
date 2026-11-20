@@ -1,8 +1,13 @@
 {
   "name": "wallscape",
   "version": "0.1.0",
-  "private": true,
   "description": "Editorial full-screen wallpaper switcher for Windows",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qian13586-crypto/WallSpace.git"
+  },
+  "homepage": "https://github.com/qian13586-crypto/WallSpace#readme",
   "main": "main.js",
   "scripts": {
     "start": "runtime\\electron.exe ."
