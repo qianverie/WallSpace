@@ -388,7 +388,7 @@ async function searchBingWeb(query, ratio, fetchFn) {
       id: urlId('web', fullUrl),
       source: 'aiweb',
       sourceLabel: 'WEB · BING',
-      title: decodeHtmlEntities(meta.t || query).replace(/\s*[-|·]\s*[^-|·]{2,30}$/, '').trim() || query,
+      title: decodeHtmlEntities(meta.t).replace(/\s*[-|·]\s*[^-|·]{2,30}$/, '').trim() || '—',
       author: domain,
       description: decodeHtmlEntities(meta.desc || ''),
       tags: [],
@@ -397,7 +397,7 @@ async function searchBingWeb(query, ratio, fetchFn) {
       width,
       height,
       ratio: width && height ? ratioOf(width, height) : null,
-      tone: 'neutral',
+      tone: null,
       thumbUrl: isSafeHttpsUrl(thumbUrl) ? thumbUrl : fullUrl,
       fullUrl,
       pageUrl: isSafeHttpsUrl(meta.purl) ? meta.purl : fullUrl,
@@ -438,12 +438,12 @@ async function searchBaiduWeb(query, ratio, fetchFn) {
     if (width && height && (Math.max(width, height) < 1280 || Math.min(width, height) < 720)) continue;
     const pageUrl = entry.replaceUrl?.[0]?.FromURL || '';
     const domain = hostOf(pageUrl || fullUrl);
-    const title = decodeHtmlEntities(String(entry.fromPageTitleEnc || entry.fromPageTitle || query).replace(/<[^>]+>/g, '')).trim();
+    const title = decodeHtmlEntities(String(entry.fromPageTitleEnc || entry.fromPageTitle || '').replace(/<[^>]+>/g, '')).trim();
     items.push({
       id: urlId('baidu', fullUrl),
       source: 'aiweb',
       sourceLabel: 'WEB · BAIDU',
-      title: title || query,
+      title: title || '—',
       author: domain,
       description: '',
       tags: [],
@@ -452,7 +452,7 @@ async function searchBaiduWeb(query, ratio, fetchFn) {
       width,
       height,
       ratio: width && height ? ratioOf(width, height) : null,
-      tone: 'neutral',
+      tone: null,
       thumbUrl,
       fullUrl,
       pageUrl: isSafeHttpsUrl(pageUrl) ? pageUrl : fullUrl,
@@ -484,7 +484,7 @@ async function searchSerper(query, apiKey, ratio, fetchFn) {
       id: urlId('serper', fullUrl),
       source: 'aiweb',
       sourceLabel: 'WEB · GOOGLE',
-      title: String(img.title || query).trim(),
+      title: String(img.title || '').trim() || '—',
       author: img.source || domain,
       description: '',
       tags: [],
@@ -493,7 +493,7 @@ async function searchSerper(query, apiKey, ratio, fetchFn) {
       width,
       height,
       ratio: width && height ? ratioOf(width, height) : null,
-      tone: 'neutral',
+      tone: null,
       thumbUrl: isSafeHttpsUrl(img.thumbnailUrl) ? img.thumbnailUrl : fullUrl,
       fullUrl,
       pageUrl: isSafeHttpsUrl(img.link) ? img.link : fullUrl,
@@ -524,7 +524,7 @@ async function searchBrave(query, apiKey, ratio, fetchFn) {
       id: urlId('brave', fullUrl),
       source: 'aiweb',
       sourceLabel: 'WEB · BRAVE',
-      title: String(img.title || query).trim(),
+      title: String(img.title || '').trim() || '—',
       author: img.source || domain,
       description: '',
       tags: [],
@@ -533,7 +533,7 @@ async function searchBrave(query, apiKey, ratio, fetchFn) {
       width,
       height,
       ratio: width && height ? ratioOf(width, height) : null,
-      tone: 'neutral',
+      tone: null,
       thumbUrl: isSafeHttpsUrl(img?.thumbnail?.src) ? img.thumbnail.src : fullUrl,
       fullUrl,
       pageUrl: isSafeHttpsUrl(img.url) ? img.url : fullUrl,
@@ -560,7 +560,7 @@ async function searchOpenverse(query, ratio, fetchFn) {
       id: urlId('openverse', fullUrl),
       source: 'aiweb',
       sourceLabel: 'WEB · OPENVERSE',
-      title: String(img.title || query).trim(),
+      title: String(img.title || '').trim() || '—',
       author: img.creator || img.source || 'Openverse',
       description: '',
       tags: (img.tags || []).map(t => t.name).filter(Boolean).slice(0, 8),
@@ -569,7 +569,7 @@ async function searchOpenverse(query, ratio, fetchFn) {
       width,
       height,
       ratio: ratioOf(width, height),
-      tone: 'neutral',
+      tone: null,
       thumbUrl: isSafeHttpsUrl(img.thumbnail) ? img.thumbnail : fullUrl,
       fullUrl,
       pageUrl: isSafeHttpsUrl(img.foreign_landing_url) ? img.foreign_landing_url : fullUrl,
@@ -601,7 +601,7 @@ async function searchCommonsWeb(query, ratio, fetchFn) {
       id: urlId('wmc', fullUrl),
       source: 'aiweb',
       sourceLabel: 'WEB · COMMONS',
-      title: title || query,
+      title: title || '—',
       author: artist || 'Wikimedia Commons',
       description: '',
       tags: [],
@@ -610,7 +610,7 @@ async function searchCommonsWeb(query, ratio, fetchFn) {
       width,
       height,
       ratio: ratioOf(width, height),
-      tone: 'neutral',
+      tone: null,
       thumbUrl: isSafeHttpsUrl(info.thumburl) ? info.thumburl : fullUrl,
       fullUrl,
       pageUrl: isSafeHttpsUrl(info.descriptionurl) ? info.descriptionurl : fullUrl,
@@ -699,6 +699,7 @@ async function search({ prompt, credentials = {}, context = {}, providers = null
         query: whQuery,
         page: 1,
         genre: activeGenre,
+        useQueryGenre: false,
         ratio: targetRatio,
         resolution: 'any',
         sort: 'relevance'
@@ -711,6 +712,7 @@ async function search({ prompt, credentials = {}, context = {}, providers = null
         query: fallbackQ,
         page: 1,
         genre: activeGenre,
+        useQueryGenre: false,
         ratio: 'any',
         resolution: 'any',
         sort: 'relevance'
@@ -735,15 +737,6 @@ async function search({ prompt, credentials = {}, context = {}, providers = null
       const key = String(item.fullUrl || item.id).split('?')[0].toLowerCase();
       if (!key || seen.has(key)) continue;
       seen.add(key);
-      if (plan.tags?.length && (!item.tags || !item.tags.length)) {
-        item.tags = plan.tags.slice(0, 6);
-      }
-      if (activeGenre !== 'all' && (!item.genres || !item.genres.length)) {
-        item.genres = [activeGenre];
-      }
-      if (plan.tone && plan.tone !== 'any' && (!item.tone || item.tone === 'neutral')) {
-        item.tone = plan.tone;
-      }
       merged.push(item);
       added++;
     }

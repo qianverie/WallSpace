@@ -309,7 +309,7 @@ const S = {
   scope: 'all', genre: 'all', tone: 'any', ratio: 'any', resolution: 'any', sort: 'relevance', query: '',
   filtered: [], current: null, currentCard: null, previewImage: null, framing: DEFAULT_FRAMING,
   style: 'fill', monitorId: null, monitors: [], syncLock: false, busy: false, undoAvailable: false,
-  aiMode: false, aiResults: null, aiMeta: null, aiBusy: false, aiProviderDraft: 'openai', aiFilterActive: false, aiSortActive: false
+  aiMode: false, aiResults: null, aiMeta: null, aiBusy: false, aiProviderDraft: 'openai', aiSortActive: false
 };
 
 let toastTimer = null, refreshing = false;
@@ -669,7 +669,6 @@ function buildFilters() {
         const submitted = Boolean(onlineSearchKey);
         if (restart) resetOnlineSearch();
         S[key] = value;
-        if (S.aiResults && ['genre', 'tone', 'ratio', 'resolution'].includes(key)) S.aiFilterActive = true;
         persistFilters();
         $('#grid').scrollTop = 0;
         buildFilters(); applyFilters(); render();
@@ -750,7 +749,6 @@ function exitAiResults() {
   if (!S.aiResults) return;
   S.aiResults = null;
   S.aiMeta = null;
-  S.aiFilterActive = false;
   S.aiSortActive = false;
   paintAiBanner();
   paintClearFilters();
@@ -791,7 +789,6 @@ async function submitAiSearch() {
   }
   S.aiResults = result.items || [];
   S.aiMeta = result;
-  S.aiFilterActive = false;
   S.aiSortActive = false;
   paintAiBanner();
   paintClearFilters();
@@ -831,9 +828,9 @@ function updateFavorites(favorites, id) {
   if (S.scope === 'saved' || S.query.trim()) renderSearch(false, true);
 }
 
-function matchesFilters(item) {
+function matchesFilters(item, defaultTone) {
   if (!wallpaperSearch.matchesGenre(item, S.genre)) return false;
-  if (S.tone !== 'any' && (item.tone || 'neutral') !== S.tone) return false;
+  if (S.tone !== 'any' && (item.tone || defaultTone) !== S.tone) return false;
   if (S.ratio !== 'any') {
     const itemRatio = (item.width && item.height) ? ratioOf(item.width, item.height) : item.ratio;
     if (itemRatio !== S.ratio) return false;
@@ -859,29 +856,12 @@ function scopedItems(includeOnline = false) {
       : S.items;
   const named = !archive && S.query.trim() ? S.favorites.filter(item => item.customName &&
     !indexedItems.has(item.id) && !(includeOnline && onlineItems.has(item.id))) : [];
-  return items.concat(named).filter(matchesFilters);
+  return items.concat(named).filter(item => matchesFilters(item, 'neutral'));
 }
 
 function applyFilters() {
   if (S.aiResults) {
-    S.filtered = S.aiFilterActive ? S.aiResults.filter(item => {
-      if (S.genre !== 'all' && !wallpaperSearch.matchesGenre(item, S.genre)) return false;
-      if (S.tone !== 'any' && (item.tone || 'neutral') !== S.tone) return false;
-      if (S.ratio !== 'any') {
-        const itemRatio = (item.width && item.height) ? ratioOf(item.width, item.height) : item.ratio;
-        if (itemRatio !== S.ratio) return false;
-      }
-      if (S.resolution !== 'any') {
-        const known = !!(item.width && item.height && !item.sizeFromThumb);
-        if (S.resolution === 'unknown') {
-          if (known) return false;
-        } else {
-          if (!known) return false;
-          if (Math.min(item.width, item.height) < RES_MIN[S.resolution]) return false;
-        }
-      }
-      return true;
-    }) : S.aiResults.slice();
+    S.filtered = S.aiResults.filter(item => matchesFilters(item));
     if (S.aiSortActive && S.sort === 'popular') S.filtered.sort(wallpaperSearch.comparePopularity);
     else if (S.aiSortActive && S.sort === 'newest') S.filtered.sort(wallpaperSearch.compareDate);
     return;

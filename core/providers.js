@@ -103,9 +103,9 @@ const TONE_HINTS = {
   mono: ['monochrome', 'grayscale', 'noir', 'minimal', 'minimalist', 'white', 'black', 'abstract', 'flat', 'silhouette']
 };
 
-function toneFrom(words) {
+function toneFrom(words, fallback = 'neutral') {
   const w = words.map(s => s.toLowerCase());
-  let best = 'neutral', score = 0;
+  let best = fallback, score = 0;
   for (const [tone, keys] of Object.entries(TONE_HINTS)) {
     const n = keys.filter(k => w.some(x => x.includes(k))).length;
     if (n > score) { score = n; best = tone; }
@@ -372,7 +372,7 @@ async function unsplash(cred, query) {
     id: 'unsplash:' + i.id, source: 'unsplash', sourceLabel: 'UNSPLASH',
     title: i.alt_description || i.description || 'Untitled', author: (i.user && i.user.name) || 'Unknown',
     description: i.description || '', tags: (i.tags || []).map(t => t.title || t).slice(0, 8), tagsCn: [],
-    width: i.width, height: i.height, ratio: ratioOf(i.width, i.height), tone: 'neutral',
+    width: i.width, height: i.height, ratio: ratioOf(i.width, i.height), tone: null,
     thumbUrl: i.urls.small, fullUrl: i.urls.regular,
     pageUrl: i.links.html, license: 'Unsplash License', date: (i.created_at || '').slice(0, 10)
   }));
@@ -386,12 +386,12 @@ async function pexels(cred, query) {
     id: 'pexels:' + i.id, source: 'pexels', sourceLabel: 'PEXELS',
     title: i.alt || `Photograph ${i.id}`, author: i.photographer || 'Unknown', description: '',
     tags: (i.alt || '').toLowerCase().split(/\s+/).slice(0, 8), tagsCn: [],
-    width: i.width, height: i.height, ratio: ratioOf(i.width, i.height), tone: 'neutral',
+    width: i.width, height: i.height, ratio: ratioOf(i.width, i.height), tone: null,
     thumbUrl: i.src.medium, fullUrl: i.src.large2x || i.src.original,
     pageUrl: i.url, license: 'Pexels License', date: ''
   }));
 }
-async function wallhavenPage({ query = '', page = 1, genre = 'all', ratio, resolution, sort } = {}) {
+async function wallhavenPage({ query = '', page = 1, genre = 'all', useQueryGenre = true, ratio, resolution, sort } = {}) {
   if (!Number.isSafeInteger(page) || page < 1) throw new Error('Invalid Wallhaven page');
   if (resolution === 'unknown') return { items: [], total: 0, nextPage: null };
   const theme = Object.hasOwn(WALLHAVEN_GENRES, genre) ? WALLHAVEN_GENRES[genre] : null;
@@ -423,17 +423,18 @@ async function wallhavenPage({ query = '', page = 1, genre = 'all', ratio, resol
         (ratio && ratio !== 'any' && imageRatio !== ratio)) return [];
     const tags = [...new Set([image.category, ...(image.tags || []).map(tag => tag.name)].filter(Boolean))];
     const labels = { anime: '动漫', people: '人物' };
+    const categoryGenres = Object.hasOwn(labels, image.category) ? [image.category] : [];
     return [{
       id: 'wallhaven:' + image.id, source: 'wallhaven', sourceLabel: 'WALLHAVEN',
       title: tags.filter(tag => tag !== image.category).slice(0, 3).join(' / ') || `Wallhaven · ${image.id}`,
       author: image.uploader?.username || 'Wallhaven community', description: '',
       tags, tagsCn: tags.map(tag => labels[tag] || TAG_CN[tag]).filter(Boolean),
-      genres: theme ? [genre] : image.category === 'anime' ? ['anime'] : [],
-      ...(genre === 'people' ? { medium: 'photo' } : {}),
+      genres: useQueryGenre && theme ? [genre] : categoryGenres,
+      ...(useQueryGenre && genre === 'people' ? { medium: 'photo' } : {}),
       stats: Object.fromEntries(['favorites', 'views'].filter(key => Number.isFinite(image[key]) && image[key] >= 0)
         .map(key => [key, image[key]])),
       width: image.dimension_x, height: image.dimension_y, ratio: imageRatio,
-      tone: toneFrom(tags), thumbUrl: image.thumbs.small, fullUrl: image.path,
+      tone: toneFrom(tags, null), thumbUrl: image.thumbs.small, fullUrl: image.path,
       pageUrl: `https://wallhaven.cc/w/${image.id}`, license: 'Wallhaven / see source', date: image.created_at || ''
     }];
   });
