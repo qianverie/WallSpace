@@ -651,11 +651,13 @@ function scoreItem(item, plan, preferredRatio) {
   return score;
 }
 
-async function search({ prompt, credentials = {}, context = {}, providers = null, fetchFn = null }) {
+async function search({ prompt, credentials = {}, context = {}, providers = null, fetchFn = null, signal, onProgress }) {
   const cleanPrompt = String(prompt || '').trim().slice(0, 200);
   if (!cleanPrompt) return { ok: false, error: 'Empty search prompt', items: [] };
 
+  signal?.throwIfAborted();
   const planned = await planIntent(cleanPrompt, credentials, context, fetchFn);
+  signal?.throwIfAborted();
   const { plan } = planned;
   const primaryWebQuery = plan.webQueries[0] || `${cleanPrompt} wallpaper 4k`;
   const secondaryWebQuery = plan.webQueries[1] || '';
@@ -669,96 +671,89 @@ async function search({ prompt, credentials = {}, context = {}, providers = null
   const preferredRatio = context.displayRatioBucket || 'any';
 
   const tasks = [];
-  const addTask = (label, promise) => tasks.push(
-    promise.then(list => ({ label, ok: true, items: Array.isArray(list) ? list : [] }))
-      .catch(error => ({ label, ok: false, items: [], error: String(error.message || error) }))
-  );
+  const addTask = (label, run) => tasks.push({ label, run });
 
   if (credentials.serperKey) {
-    addTask('Google', searchSerper(primaryWebQuery, credentials.serperKey, targetRatio, fetchFn));
+    addTask('Google', () => searchSerper(primaryWebQuery, credentials.serperKey, targetRatio, fetchFn));
   }
   if (credentials.braveKey) {
-    addTask('Brave', searchBrave(primaryWebQuery, credentials.braveKey, targetRatio, fetchFn));
+    addTask('Brave', () => searchBrave(primaryWebQuery, credentials.braveKey, targetRatio, fetchFn));
   }
-  addTask('百度', searchBaiduWeb(zhQuery, targetRatio, fetchFn));
+  addTask('百度', () => searchBaiduWeb(zhQuery, targetRatio, fetchFn));
   if (zhQuery2 && zhQuery2 !== zhQuery) {
-    addTask('百度', searchBaiduWeb(zhQuery2, targetRatio, fetchFn));
+    addTask('百度', () => searchBaiduWeb(zhQuery2, targetRatio, fetchFn));
   }
-  addTask('Bing', searchBingWeb(primaryWebQuery, targetRatio, fetchFn));
+  addTask('Bing', () => searchBingWeb(primaryWebQuery, targetRatio, fetchFn));
   if (secondaryWebQuery && secondaryWebQuery.toLowerCase() !== primaryWebQuery.toLowerCase()) {
-    addTask('Bing', searchBingWeb(secondaryWebQuery, targetRatio, fetchFn));
+    addTask('Bing', () => searchBingWeb(secondaryWebQuery, targetRatio, fetchFn));
   }
   if (enReady) {
-    addTask('Openverse', searchOpenverse(whQuery, targetRatio, fetchFn));
-    addTask('Commons', searchCommonsWeb(whQuery, targetRatio, fetchFn));
+    addTask('Openverse', () => searchOpenverse(whQuery, targetRatio, fetchFn));
+    addTask('Commons', () => searchCommonsWeb(whQuery, targetRatio, fetchFn));
   }
 
   if (enReady && providers && typeof providers.wallhavenPage === 'function') {
-    addTask('Wallhaven', (async () => {
-      const first = await providers.wallhavenPage({
-        query: whQuery,
-        page: 1,
-        genre: activeGenre,
-        useQueryGenre: false,
-        ratio: targetRatio,
-        resolution: 'any',
-        sort: 'relevance'
-      }).then(r => r.items || []).catch(() => []);
-      if (first.length >= 12) return first;
-      // Broaden ratio/query while STRICTLY preserving the user's selected genre
-      // so anime never leaks into Animals / Landscape / Architecture.
-      const fallbackQ = (whQuery2 && !hasCjk(whQuery2)) ? whQuery2 : whQuery;
-      const broad = await providers.wallhavenPage({
-        query: fallbackQ,
-        page: 1,
-        genre: activeGenre,
-        useQueryGenre: false,
-        ratio: 'any',
-        resolution: 'any',
-        sort: 'relevance'
-      }).then(r => r.items || []).catch(() => []);
-      return first.concat(broad);
-    })());
+    const options = { page: 1, genre: activeGenre, useQueryGenre: false, resolution: 'any', sort: 'relevance', signal };
+    const first = providers.wallhavenPage({ ...options, query: whQuery, ratio: targetRatio }).then(r => r.items || []);
+    addTask('Wallhaven', () => first);
+    addTask('Wallhaven', async () => {
+      const list = await first.catch(() => []);
+      signal?.throwIfAborted();
+      if (list.length >= 12) return [];
+      const query = whQuery2 && !hasCjk(whQuery2) ? whQuery2 : whQuery;
+      const result = await providers.wallhavenPage({ ...options, query, ratio: 'any' });
+      return result.items || [];
+    });
   }
-  if (enReady && providers && typeof providers.searchOnline === 'function' && (credentials.unsplash || credentials.pexels)) {
-    addTask('Unsplash/Pexels', providers.searchOnline(credentials, whQuery, 'all', activeGenre, {
-      ratio: targetRatio, resolution: 'any'
-    }).then(r => (r.items || []).filter(i => i.source === 'unsplash' || i.source === 'pexels')));
-  }
-
-  const settled = await Promise.all(tasks);
-  const seen = new Set();
-  const merged = [];
-  const countByLabel = new Map();
-
-  for (const bucket of settled) {
-    let added = 0;
-    for (const item of bucket.items) {
-      const key = String(item.fullUrl || item.id).split('?')[0].toLowerCase();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      merged.push(item);
-      added++;
+  if (enReady && providers && typeof providers.searchOnline === 'function') {
+    for (const [source, label] of [['unsplash', 'Unsplash'], ['pexels', 'Pexels']]) {
+      if (!credentials[source]) continue;
+      addTask(label, async () => {
+        const result = await providers.searchOnline(credentials, whQuery, source, activeGenre, { signal });
+        if (result.failed?.length) throw new Error(label + ' search failed');
+        return result.items || [];
+      });
     }
-    countByLabel.set(bucket.label, (countByLabel.get(bucket.label) || 0) + added);
   }
 
-  const channels = [...countByLabel.entries()]
-    .filter(([, count]) => count > 0)
-    .map(([name, count]) => ({ name, count }));
+  const buckets = new Array(tasks.length);
+  function snapshot() {
+    const settled = buckets.filter(Boolean);
+    const seen = new Set();
+    const merged = [];
+    const countByLabel = new Map();
+    for (const bucket of settled) {
+      for (const item of bucket.items) {
+        const key = String(item.fullUrl || item.id).split('?')[0].toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        merged.push(item);
+        countByLabel.set(bucket.label, (countByLabel.get(bucket.label) || 0) + 1);
+      }
+    }
+    merged.sort((a, b) => scoreItem(b, plan, preferredRatio) - scoreItem(a, plan, preferredRatio));
+    const succeeded = new Set(settled.filter(bucket => bucket.ok).map(bucket => bucket.label));
+    return {
+      ok: true, items: merged.slice(0, 120), plan,
+      aiUsed: planned.aiUsed, aiError: planned.aiError,
+      model: planned.model || null, provider: planned.provider || null,
+      channels: [...countByLabel].map(([name, count]) => ({ name, count })),
+      completed: settled.length, total: tasks.length,
+      failed: [...new Set(settled.filter(bucket => !bucket.ok && !succeeded.has(bucket.label)).map(bucket => bucket.label))]
+    };
+  }
 
-  merged.sort((a, b) => scoreItem(b, plan, preferredRatio) - scoreItem(a, plan, preferredRatio));
-
-  return {
-    ok: true,
-    items: merged.slice(0, 120),
-    plan,
-    aiUsed: planned.aiUsed,
-    aiError: planned.aiError,
-    model: planned.model || null,
-    provider: planned.provider || null,
-    channels
-  };
+  await Promise.all(tasks.map(async ({ label, run }, index) => {
+    try {
+      const list = await run();
+      buckets[index] = { label, ok: true, items: Array.isArray(list) ? list : [] };
+    } catch {
+      buckets[index] = { label, ok: false, items: [] };
+    }
+    if (!signal?.aborted) onProgress?.(snapshot());
+  }));
+  signal?.throwIfAborted();
+  return snapshot();
 }
 
 module.exports = { search, testConnection, planIntent };

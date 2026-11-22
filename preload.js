@@ -1,7 +1,7 @@
 'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = new Set(['wallpaper:changed', 'wallpaper:applyProgress', 'tray:command', 'sources:updated', 'wallhaven:updated', 'bootstrap:ready', 'window:resized', 'displays:changed', 'motion:active']);
+const EVENTS = new Set(['ai:progress', 'wallpaper:changed', 'wallpaper:applyProgress', 'tray:command', 'sources:updated', 'wallhaven:updated', 'bootstrap:ready', 'window:resized', 'displays:changed', 'motion:active']);
 
 contextBridge.exposeInMainWorld('wsp', {
   dragStart: () => ipcRenderer.send('window:dragStart'),
@@ -10,11 +10,14 @@ contextBridge.exposeInMainWorld('wsp', {
   bootstrap: () => ipcRenderer.invoke('app:bootstrap'),
   refreshSources: () => ipcRenderer.invoke('sources:refresh'),
   searchSources: (query, genre, filters) => ipcRenderer.invoke('sources:search', { query, genre, filters }),
-  aiSearch: (prompt, context) => ipcRenderer.invoke('ai:search', { prompt, context }),
+  aiSearch: (id, prompt, context) => ipcRenderer.invoke('ai:search', { id, prompt, context }),
+  aiCancel: id => ipcRenderer.send('ai:cancel', id),
   aiTest: draft => ipcRenderer.invoke('ai:test', draft),
   wallhavenMore: (query, page, genre, filters) => ipcRenderer.invoke('sources:wallhavenMore', { query, page, genre, filters }),
   apply: payload => ipcRenderer.invoke('item:apply', payload),
   undoWallpaper: () => ipcRenderer.invoke('desktop:undo'),
+  exportBackup: framings => ipcRenderer.invoke('backup:export', framings),
+  importBackup: () => ipcRenderer.invoke('backup:import'),
   saveDesktopProfile: () => ipcRenderer.invoke('desktop:saveProfile'),
   restoreDesktopProfile: () => ipcRenderer.invoke('desktop:restoreProfile'),
   toggleFavorite: item => ipcRenderer.invoke('item:favorite', item),

@@ -163,12 +163,12 @@ body.lang-zh .win-action, body.lang-ja .win-action { letter-spacing: .04em; }
 }
 #ai-banner[hidden] { display: none; }
 #ai-banner-text { opacity: .88; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#btn-ai-exit {
+:is(#btn-ai-exit, #btn-ai-cancel) {
   flex: none; cursor: pointer; font-weight: 800; opacity: .72; white-space: nowrap;
   border-bottom: 1px solid currentColor; padding-bottom: 1px;
   transition: opacity 200ms var(--ease-out);
 }
-#btn-ai-exit:hover { opacity: 1; }
+:is(#btn-ai-exit, #btn-ai-cancel):hover { opacity: 1; }
 #search {
   flex: 1; min-width: 0;
   font-size: calc(36px * var(--s)); font-weight: 700; letter-spacing: -.045em;
@@ -452,6 +452,7 @@ body.lang-zh .win-action, body.lang-ja .win-action { letter-spacing: .04em; }
 .mode.is-active { opacity: 1; color: #000; }
 .mode:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
 #apply-bar {
+  width: 100%; text-align: left;
   position: relative; overflow: hidden;
   display: flex; justify-content: space-between; align-items: center;
   padding: calc(10px * var(--s)) var(--margin) calc(var(--margin) * .55);

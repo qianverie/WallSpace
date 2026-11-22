@@ -11,6 +11,7 @@ const { Store } = require('./core/store');
 const providers = require('./core/providers');
 const wallpaper = require('./core/wallpaper');
 const { createDesktop } = require('./core/desktop');
+const { createBackup } = require('./core/backup');
 const { createMotion } = require('./core/motion');
 const aiSearch = require('./core/ai-search');
 const { download } = require('./core/fetch');
@@ -39,6 +40,7 @@ fs.mkdirSync(STATE_DIR, { recursive: true });
 const store = new Store(STATE_DIR);
 fs.mkdirSync(CACHE, { recursive: true });
 app.isQuitting = false;
+if (process.platform === 'win32') app.setAppUserModelId('Wallspace.Desktop');
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'wsp', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
@@ -313,7 +315,7 @@ async function findImageSource(item, progress) {
     const url = item.fullUrl;
     if (url.startsWith('wsp://local/')) {
       const p = decodeURIComponent(new URL(url).pathname).replace(/^\//, '');
-      if (!fs.existsSync(p)) throw new Error('local file missing: ' + p);
+      if (!fs.existsSync(p)) throw Object.assign(new Error('Local file missing: ' + p), { code: 'IMAGE_MISSING' });
       source = p;
     } else {
       const hash = crypto.createHash('sha1').update(url).digest('hex').slice(0, 18);
@@ -358,7 +360,7 @@ async function normalizeImage({ source, cachedDownload }) {
   }
   if (!img || img.isEmpty()) {
     if (cachedDownload) { try { fs.unlinkSync(source); } catch (e) { /* ignore */ } }
-    throw new Error('image is not decodable (incomplete download or unsupported format)');
+    throw Object.assign(new Error('Image is incomplete or unsupported'), { code: 'IMAGE_DECODE' });
   }
   const normalizedBytes = img.toPNG();
   const key = crypto.createHash('sha1').update(normalizedBytes).digest('hex').slice(0, 18);
@@ -378,14 +380,17 @@ async function prepareDesktopImage(item, progress) {
   return normalizeImage(local);
 }
 
+const desktopDirectory = path.join(STATE_DIR, 'desktop');
 const desktop = createDesktop({
-  directory: path.join(STATE_DIR, 'desktop'), store, engine: wallpaper, prepareImage: prepareDesktopImage,
+  directory: desktopDirectory, store, engine: wallpaper, prepareImage: prepareDesktopImage,
   async decode(file) {
     const size = await wallpaper.run('measure', { image: file });
     if (!size.ok) throw new Error(size.error || 'Unable to decode desktop image');
     return { width: size.width, height: size.height };
   }
 });
+
+const backup = createBackup({ store, desktop, imageDirectory: path.join(desktopDirectory, 'images') });
 
 const motion = createMotion({
   BrowserWindow, dialog, root: ROOT, store, readDesktop: desktop.read,
@@ -454,13 +459,18 @@ function notifyDesktopChanged(result) {
 
 async function applyItem(item, opts = {}) {
   const style = opts.style || store.state.settings.style || 'fill';
+  let stage = 'display';
+  const progress = next => { stage = next; opts.progress?.(next); };
   let result;
-  try { result = await desktop.apply(item, { ...opts, style }); }
-  catch (error) { return { ok: false, code: error.code, error: error.message }; }
-  if (!result.ok) return result;
+  try { result = await desktop.apply(item, { ...opts, style, progress }); }
+  catch (error) { return { ok: false, stage, code: error.code, error: error.message }; }
+  if (!result.ok) return { ...result, stage };
   motion.stop(style === 'span' ? null : opts.monitorId);
   let lock = null;
-  if (opts.syncLock) lock = await wallpaper.run('lock', { image: result.source });
+  if (opts.syncLock) {
+    progress('lock');
+    lock = await wallpaper.run('lock', { image: result.source }).catch(error => ({ ok: false, error: error.message }));
+  }
 
   store.pushHistory(item);
   store.setSettings({ style, lastWallpaper: item.id });
@@ -693,6 +703,28 @@ ipcMain.handle('desktop:undo', () => runDesktopAction(desktop.undo));
 ipcMain.handle('desktop:saveProfile', () => runDesktopAction(desktop.saveProfile));
 ipcMain.handle('desktop:restoreProfile', () => runDesktopAction(desktop.restoreProfile));
 
+let backupBusy = false;
+
+async function transferBackup(operation) {
+  if (backupBusy) return { ok: false, code: 'BACKUP_BUSY' };
+  backupBusy = true;
+  try { return await operation(); }
+  catch (error) { return { ok: false, code: error.code, error: error.message }; }
+  finally { backupBusy = false; }
+}
+
+const backupFilters = [{ name: 'Wallspace', extensions: ['json'] }];
+ipcMain.handle('backup:export', (_event, framings) => transferBackup(async () => {
+  const chosen = await dialog.showSaveDialog(win, { defaultPath: 'Wallspace-backup.json', filters: backupFilters });
+  if (chosen.canceled) return { ok: false, canceled: true };
+  return { ok: true, count: await backup.exportTo(chosen.filePath, framings) };
+}));
+ipcMain.handle('backup:import', () => transferBackup(async () => {
+  const chosen = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: backupFilters });
+  if (chosen.canceled) return { ok: false, canceled: true };
+  return { ok: true, ...await backup.importFrom(chosen.filePaths[0]) };
+}));
+
 ipcMain.handle('item:saveAs', async (_e, item) => {
   let src;
   try { ({ source: src } = await normalizeImage(await findImageSource(item))); }
@@ -763,16 +795,39 @@ ipcMain.handle('credentials:set', async (_e, patch) => {
   return { ok: true, credentials: publicCredentials() };
 });
 
-ipcMain.handle('ai:search', async (_e, { prompt, context } = {}) => {
-  const browserSession = win?.webContents.session || session.defaultSession;
-  const fetchFn = (input, options) => browserSession.fetch(input, options);
-  return aiSearch.search({
-    prompt,
-    credentials: store.state.credentials,
-    context: context || {},
-    providers,
-    fetchFn
-  });
+const aiJobs = new Map();
+
+ipcMain.on('ai:cancel', ({ sender }, id) => {
+  const job = aiJobs.get(sender.id);
+  if (job?.id === id) job.controller.abort();
+});
+
+ipcMain.handle('ai:search', async ({ sender }, { id, prompt, context } = {}) => {
+  const senderId = sender.id;
+  aiJobs.get(senderId)?.controller.abort();
+  const controller = new AbortController();
+  const job = { id, controller };
+  aiJobs.set(senderId, job);
+  const signal = controller.signal;
+  const abort = () => controller.abort();
+  sender.once('destroyed', abort);
+  try {
+    return await aiSearch.search({
+      prompt, credentials: store.state.credentials, context: context || {}, providers, signal,
+      fetchFn: (input, options) => sender.session.fetch(input, {
+        ...options, signal: options?.signal ? AbortSignal.any([options.signal, signal]) : signal
+      }),
+      onProgress(result) {
+        if (!sender.isDestroyed()) sender.send('ai:progress', { id, result });
+      }
+    });
+  } catch (error) {
+    if (signal.aborted) return { ok: false, canceled: true };
+    throw error;
+  } finally {
+    sender.removeListener('destroyed', abort);
+    if (aiJobs.get(senderId) === job) aiJobs.delete(senderId);
+  }
 });
 
 ipcMain.handle('ai:test', async (_e, draft = {}) => {
@@ -1020,6 +1075,7 @@ if (!gotLock) {
 }
 
 app.on('before-quit', () => {
+  for (const job of aiJobs.values()) job.controller.abort();
   clearTimeout(cacheGcStartupTimer);
   clearInterval(cacheGcInterval);
   motion.quit();

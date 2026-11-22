@@ -78,6 +78,7 @@
 
     <div id="ai-banner" hidden>
       <span id="ai-banner-text"></span>
+      <button type="button" id="btn-ai-cancel" data-i18n="cancelAi" hidden>取消搜索</button>
       <button type="button" id="btn-ai-exit" data-i18n="aiExitResults">退出 AI 结果 ×</button>
     </div>
 
@@ -127,8 +128,8 @@
         <button id="btn-undo-wallpaper" type="button" data-i18n="undoWallpaper" hidden>撤销上次应用</button>
       </div>
       <div id="mode-scale"></div>
-      <div id="apply-bar"><span data-i18n="apply">应用到桌面</span><span id="apply-arrow">↗</span></div>
-      <div id="receipt"></div>
+      <button type="button" id="apply-bar"><span id="apply-label" data-i18n="apply">应用到桌面</span><span id="apply-arrow" aria-hidden="true">↗</span></button>
+      <div id="receipt" role="status"></div>
     </div>
   </section>
 
@@ -199,6 +200,10 @@
           <button type="button" class="settings-action" id="btn-save-desktop-profile" data-i18n="saveDesktopProfile">保存显示器方案</button>
           <button type="button" class="settings-action" id="btn-restore-desktop-profile" data-i18n="restoreDesktopProfile">恢复显示器方案</button>
           <div class="settings-info" id="desktop-profile-status" role="status"></div>
+          <div class="settings-info" data-i18n="backupNote">包含收藏、保存的构图和显示器方案。导入时保留本机已有条目。</div>
+          <button type="button" class="settings-action" id="btn-export-backup" data-i18n="exportBackup">导出图库备份</button>
+          <button type="button" class="settings-action" id="btn-import-backup" data-i18n="importBackup">导入图库备份</button>
+          <div class="settings-info" id="backup-status" role="status"></div>
           <div class="settings-action" id="btn-autostart">开机自启 / 关</div>
           <div class="settings-info" id="cache-info">CACHE —</div>
           <div class="settings-action" id="btn-cache-clear" data-i18n="clearCache">清理缓存</div>

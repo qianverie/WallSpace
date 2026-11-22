@@ -81,6 +81,25 @@ class Store {
     catch (error) { this.state.desktop = previous; throw error; }
   }
 
+  mergeLibrary(favorites, profiles) {
+    const previous = this.state;
+    const merged = new Map(previous.favorites.map(item => [item.id, item]));
+    for (const item of favorites) {
+      const existing = merged.get(item.id);
+      if (!existing) merged.set(item.id, item);
+      else if (item.localPath && existing.localPath && !fs.existsSync(existing.localPath)) {
+        merged.set(item.id, { ...item, ...(existing.customName ? { customName: existing.customName } : {}) });
+      }
+    }
+    this.state = {
+      ...previous, favorites: [...merged.values()],
+      desktop: { ...previous.desktop, profiles: { ...profiles, ...previous.desktop.profiles } }
+    };
+    try { this.save(); }
+    catch (error) { this.state = previous; throw error; }
+    return this.state.favorites;
+  }
+
   setMotionLibrary(files) {
     const previous = this.state.motionLibrary;
     this.state.motionLibrary = files;
@@ -138,4 +157,4 @@ function pick(i) {
   };
 }
 
-module.exports = { Store };
+module.exports = { Store, pick };

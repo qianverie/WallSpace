@@ -348,7 +348,7 @@ async function commonsCollection(cacheDir, request = json) {
   });
   const fetchIndex = () => request(`${COMMONS}/w/api.php?${params}`, { timeout: 8000 });
   const response = await fetchIndex().catch(async error => {
-    if (error.code !== 'ECONNRESET') throw error;
+    if (signal?.aborted || error.code !== 'ECONNRESET') throw error;
     await new Promise(resolve => setTimeout(resolve, 300));
     return fetchIndex();
   });
@@ -363,11 +363,11 @@ async function commonsCollection(cacheDir, request = json) {
 }
 
 // ---------- credential-gated overseas providers ----------
-async function unsplash(cred, query) {
+async function unsplash(cred, query, _genre, { signal } = {}) {
   if (!cred.unsplash) return [];
   const q = encodeURIComponent(query || 'wallpaper');
   const d = await json(`https://api.unsplash.com/search/photos?query=${q}&per_page=30&orientation=landscape`,
-    { headers: { Authorization: `Client-ID ${cred.unsplash}` } });
+    { signal, headers: { Authorization: `Client-ID ${cred.unsplash}` } });
   return (d.results || []).map(i => ({
     id: 'unsplash:' + i.id, source: 'unsplash', sourceLabel: 'UNSPLASH',
     title: i.alt_description || i.description || 'Untitled', author: (i.user && i.user.name) || 'Unknown',
@@ -377,11 +377,11 @@ async function unsplash(cred, query) {
     pageUrl: i.links.html, license: 'Unsplash License', date: (i.created_at || '').slice(0, 10)
   }));
 }
-async function pexels(cred, query) {
+async function pexels(cred, query, _genre, { signal } = {}) {
   if (!cred.pexels) return [];
   const q = encodeURIComponent(query || 'wallpaper');
   const d = await json(`https://api.pexels.com/v1/search?query=${q}&per_page=30&orientation=landscape`,
-    { headers: { Authorization: cred.pexels } });
+    { signal, headers: { Authorization: cred.pexels } });
   return (d.photos || []).map(i => ({
     id: 'pexels:' + i.id, source: 'pexels', sourceLabel: 'PEXELS',
     title: i.alt || `Photograph ${i.id}`, author: i.photographer || 'Unknown', description: '',
@@ -391,7 +391,7 @@ async function pexels(cred, query) {
     pageUrl: i.url, license: 'Pexels License', date: ''
   }));
 }
-async function wallhavenPage({ query = '', page = 1, genre = 'all', useQueryGenre = true, ratio, resolution, sort } = {}) {
+async function wallhavenPage({ query = '', page = 1, genre = 'all', useQueryGenre = true, ratio, resolution, sort, signal } = {}) {
   if (!Number.isSafeInteger(page) || page < 1) throw new Error('Invalid Wallhaven page');
   if (resolution === 'unknown') return { items: [], total: 0, nextPage: null };
   const theme = Object.hasOwn(WALLHAVEN_GENRES, genre) ? WALLHAVEN_GENRES[genre] : null;
@@ -403,9 +403,9 @@ async function wallhavenPage({ query = '', page = 1, genre = 'all', useQueryGenr
   if (Object.hasOwn(WALLHAVEN_RATIOS, ratio)) params.set('ratios', WALLHAVEN_RATIOS[ratio]);
   const terms = [theme?.tag && '+' + theme.tag, query].filter(Boolean).join(' ');
   if (terms) params.set('q', terms);
-  const request = () => json(`https://wallhaven.cc/api/v1/search?${params}`, { timeout: 6000 });
+  const request = () => json(`https://wallhaven.cc/api/v1/search?${params}`, { timeout: 6000, signal });
   const response = await request().catch(async error => {
-    if (error.code !== 'ECONNRESET') throw error;
+    if (signal?.aborted || error.code !== 'ECONNRESET') throw error;
     await new Promise(resolve => setTimeout(resolve, 300));
     return request();
   });

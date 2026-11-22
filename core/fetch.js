@@ -30,7 +30,8 @@ function get(url, options = {}) {
     const req = mod.request(u, {
       method: options.method || 'GET',
       headers,
-      timeout: options.timeout || 20000
+      timeout: options.timeout || 20000,
+      signal: options.signal
     }, res => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirects > 0) {
         res.resume();
@@ -50,6 +51,7 @@ function get(url, options = {}) {
         body: Buffer.concat(chunks)
       }));
       stream.on('error', reject);
+      res.on('aborted', () => reject(options.signal?.reason || new Error('Response interrupted: ' + u.host)));
     });
     req.on('timeout', () => req.destroy(new Error('timeout ' + u.host)));
     req.on('error', reject);
@@ -69,7 +71,8 @@ async function json(url, options = {}) {
 // can never be handed to SystemParametersInfo.
 async function getImage(url, fetchImage) {
   const source = new URL(url);
-  if (source.protocol !== 'https:' || source.username || source.password) throw new Error('Invalid image URL');
+  const sourceError = message => Object.assign(new Error(message), { code: 'IMAGE_SOURCE' });
+  if (source.protocol !== 'https:' || source.username || source.password) throw sourceError('Invalid image URL');
   const timeout = AbortSignal.timeout(30000);
   const limit = 128 * 1024 * 1024;
   let response;
@@ -82,13 +85,13 @@ async function getImage(url, fetchImage) {
     throw Object.assign(new Error(`${source.host}: ${error.message}`, { cause: error }), { code: 'IMAGE_NETWORK' });
   }
   try {
-    if (!response.ok || response.status === 206) throw new Error(`${source.host}: HTTP ${response.status}`);
+    if (!response.ok || response.status === 206) throw sourceError(`${source.host}: HTTP ${response.status}`);
     const contentType = response.headers.get('content-type') || '';
     if (contentType && !/^(image\/|application\/(?:octet-stream|binary)\b)/i.test(contentType)) {
-      throw new Error(`unexpected content-type: ${contentType}`);
+      throw sourceError(`unexpected content-type: ${contentType}`);
     }
-    if (Number(response.headers.get('content-length')) > limit) throw new Error('image exceeds 128 MB');
-    if (!response.body) throw new Error('image response was empty');
+    if (Number(response.headers.get('content-length')) > limit) throw sourceError('image exceeds 128 MB');
+    if (!response.body) throw sourceError('image response was empty');
     const chunks = [];
     let bytes = 0;
     const reader = response.body.getReader();
@@ -99,11 +102,11 @@ async function getImage(url, fetchImage) {
         });
         if (done) break;
         bytes += value.byteLength;
-        if (bytes > limit) throw new Error('image exceeds 128 MB');
+        if (bytes > limit) throw sourceError('image exceeds 128 MB');
         chunks.push(value);
       }
     } finally { reader.releaseLock(); }
-    if (bytes < 1024) throw new Error('image payload too small');
+    if (bytes < 1024) throw sourceError('image payload too small');
     return Buffer.concat(chunks, bytes);
   } finally {
     await response.body?.cancel().catch(() => {});

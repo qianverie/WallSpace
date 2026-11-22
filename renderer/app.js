@@ -54,6 +54,7 @@ const I18N = {
     framingControls: 'Ctrl＋滚轮缩放 · 拖动移动 · 滚轮翻阅',
     undoWallpaper: '撤销上次应用', wallpaperUndone: '已恢复上次桌面壁纸',
     desktopProfileNote: '保存每块屏幕当前的壁纸。相同的屏幕布局重新连接时会恢复。',
+    exportBackup: '导出图库备份', importBackup: '导入图库备份', backupExported: '已导出备份', backupImported: '已导入备份', backupFramings: '项构图', backupProfiles: '套方案', backupFavorites: '张收藏', backupUnmatched: '部分方案需匹配的屏幕布局', backupInvalid: '备份格式无效或文件已损坏', backupTooLarge: '备份超过大小上限', backupImageMissing: '部分原图找不到，请恢复原文件后再导出', backupImageUnsupported: '部分原图格式不受支持', backupStorageFailed: '无法保存全部构图，本机存储空间不足或不可用', backupError: '无法读写备份文件', backupNote: '包含收藏、保存的构图和显示器方案。导入时保留本机已有条目。',
     saveDesktopProfile: '保存显示器方案', restoreDesktopProfile: '恢复显示器方案',
     desktopProfileSaved: '已保存当前屏幕方案', desktopProfileRestored: '已恢复屏幕方案',
     lockOn: '锁屏同步已开', lockOff: '锁屏同步已关', allDisplaysToast: '全部显示器',
@@ -79,6 +80,9 @@ const I18N = {
     unknownSize: '尺寸未标注', hideWindow: '隐藏', clearFiltersAction: '清空 ×',
     detailPureHint: '按住空格纯净预览 · 0 复位构图', framingHudZoom: '缩放',
     aiSearchToggle: '✦ AI 全网', aiSearchPlaceholder: '描述想要的画面、风格或色调，回车 AI 全网搜壁纸…',
+    cancelAi: '取消搜索', aiPartialFailure: '部分图源未响应', aiSearchFailed: '图源暂不可用，请稍后重试', aiStopped: '已取消搜索',
+    readDisplay: '正在检查显示器', composeWallpaper: '正在生成桌面构图', applyLock: '正在同步锁屏', retryApply: '重试应用',
+    imageMissing: '找不到原图，请检查本地文件位置', imageDecode: '无法读取原图，请检查文件或来源', imageRejected: '图源拒绝访问或未返回有效原图，请检查来源', composeFailed: '无法生成构图，请调整缩放或换一张图后重试', writeFailed: 'Windows 未能写入壁纸，请检查显示器和系统壁纸设置后重试', displayFailed: '无法读取桌面状态，请检查 Windows 壁纸设置后重试', lockFailed: '桌面已应用，锁屏同步失败',
     aiExitResults: '退出 AI 结果 ×', aiSearching: 'AI 正在全网搜图…', aiNoResults: '全网未找到匹配的高清壁纸',
     aiSearchTitle: 'AI 全网搜索', aiSearchNote: '支持任意 OpenAI 兼容接口（DeepSeek / 硅基流动 / OpenRouter / 中转站）或 Google Gemini API，凭据仅保存在本机。',
     aiBaseUrlPh: 'API BASE URL（留空使用官方默认，如 https://api.deepseek.com/v1）',
@@ -126,6 +130,7 @@ const I18N = {
     framingControls: 'Ctrl + wheel to zoom · Drag to pan · Wheel to browse',
     undoWallpaper: 'UNDO LAST APPLY', wallpaperUndone: 'PREVIOUS DESKTOP WALLPAPER RESTORED',
     desktopProfileNote: 'Save the wallpaper on each display. Reconnecting the same layout restores it.',
+    exportBackup: 'Export library backup', importBackup: 'Import library backup', backupExported: 'Backup exported', backupImported: 'Backup imported', backupFramings: 'framings', backupProfiles: 'display profiles', backupFavorites: 'favorites', backupUnmatched: 'Some profiles require a matching display layout', backupInvalid: 'Invalid or damaged backup file', backupTooLarge: 'Backup exceeds the size limit', backupImageMissing: 'An original image is missing. Restore the file before exporting.', backupImageUnsupported: 'An original image uses an unsupported format.', backupStorageFailed: 'Some framings could not be saved in local storage', backupError: 'Could not read or write the backup file', backupNote: 'Includes favorites, saved framings and display profiles. Import preserves existing entries.',
     saveDesktopProfile: 'SAVE DISPLAY PROFILE', restoreDesktopProfile: 'RESTORE DISPLAY PROFILE',
     desktopProfileSaved: 'DISPLAY PROFILE SAVED', desktopProfileRestored: 'DISPLAY PROFILE RESTORED',
     lockOn: 'LOCK SCREEN SYNC ON', lockOff: 'LOCK SCREEN SYNC OFF', allDisplaysToast: 'ALL DISPLAYS',
@@ -151,6 +156,9 @@ const I18N = {
     unknownSize: 'SIZE UNKNOWN', hideWindow: 'HIDE', clearFiltersAction: 'CLEAR ×',
     detailPureHint: 'HOLD SPACE FOR PURE PREVIEW · 0 RESET', framingHudZoom: 'ZOOM',
     aiSearchToggle: '✦ AI WEB', aiSearchPlaceholder: 'DESCRIBE SCENE, MOOD OR STYLE — PRESS ENTER FOR AI WEB SEARCH…',
+    cancelAi: 'Cancel search', aiPartialFailure: 'Some sources failed', aiSearchFailed: 'Sources are temporarily unavailable. Try again shortly.', aiStopped: 'Search canceled',
+    readDisplay: 'Checking displays', composeWallpaper: 'Rendering desktop framing', applyLock: 'Updating the lock screen', retryApply: 'Retry application',
+    imageMissing: 'Original image missing. Check the local file.', imageDecode: 'Could not read the original. Check the file or source.', imageRejected: 'The source denied access or returned an invalid image. Check the source.', composeFailed: 'Could not render the framing. Adjust the zoom or try another image.', writeFailed: 'Windows could not update the wallpaper. Check your displays and wallpaper settings.', displayFailed: 'Could not read the desktop status. Check the Windows wallpaper settings and retry.', lockFailed: 'Wallpaper applied. Lock screen update failed.',
     aiExitResults: 'EXIT AI RESULTS ×', aiSearching: 'AI SEARCHING THE WEB…', aiNoResults: 'NO MATCHING HD WALLPAPERS FOUND',
     aiSearchTitle: 'AI WEB SEARCH', aiSearchNote: 'Connect any OpenAI-compatible API (DeepSeek / OpenRouter / Ollama) or Google Gemini API. Keys stay on this machine only.',
     aiBaseUrlPh: 'API BASE URL (OPTIONAL, e.g. https://api.deepseek.com/v1)',
@@ -198,6 +206,7 @@ const I18N = {
     framingControls: 'Ctrl＋ホイールで拡大縮小 · ドラッグで移動 · ホイールで画像切替',
     undoWallpaper: '最後の適用を取り消す', wallpaperUndone: '以前の壁紙に戻しました',
     desktopProfileNote: '各画面の壁紙を保存します。同じ画面構成を再接続すると復元されます。',
+    exportBackup: 'ライブラリをエクスポート', importBackup: 'ライブラリをインポート', backupExported: 'バックアップを保存しました', backupImported: 'バックアップを読み込みました', backupFramings: '件の構図', backupProfiles: '件の画面設定', backupFavorites: '件のお気に入り', backupUnmatched: '一部の画面設定は一致する画面構成が必要です', backupInvalid: '無効または破損したバックアップです', backupTooLarge: 'バックアップがサイズ制限を超えています', backupImageMissing: '元画像がありません。ファイルを復元してから書き出してください。', backupImageUnsupported: '未対応の形式の元画像が含まれています。', backupStorageFailed: '一部の構図をローカルに保存できませんでした', backupError: 'バックアップを読み書きできませんでした', backupNote: 'お気に入り、保存した構図、画面設定を含みます。既存のデータは保持されます。',
     saveDesktopProfile: '画面設定を保存', restoreDesktopProfile: '画面設定を復元',
     desktopProfileSaved: '画面設定を保存しました', desktopProfileRestored: '画面設定を復元しました',
     lockOn: 'ロック画面同期 オン', lockOff: 'ロック画面同期 オフ', allDisplaysToast: 'すべてのディスプレイ',
@@ -223,6 +232,9 @@ const I18N = {
     unknownSize: 'サイズ不明', hideWindow: '隠す', clearFiltersAction: '解除 ×',
     detailPureHint: 'Space長押しで純粋プレビュー · 0でリセット', framingHudZoom: '拡大',
     aiSearchToggle: '✦ AI 検索', aiSearchPlaceholder: '欲しい壁紙の雰囲気や色味を入力し、Enter で AI 全網検索…',
+    cancelAi: '検索を中止', aiPartialFailure: '一部の画像ソースに接続できませんでした', aiSearchFailed: '画像ソースに接続できません。後でもう一度お試しください。', aiStopped: '検索を中止しました',
+    readDisplay: '画面を確認しています', composeWallpaper: 'デスクトップの構図を生成しています', applyLock: 'ロック画面を同期しています', retryApply: '適用を再試行',
+    imageMissing: '元画像が見つかりません。ファイルの場所をご確認ください。', imageDecode: '元画像を読み込めません。ファイルまたは出典をご確認ください。', imageRejected: '出典にアクセスできないか、無効な画像が返されました。', composeFailed: '構図を生成できませんでした。ズームを調整するか別の画像をお試しください。', writeFailed: 'Windows が壁紙を設定できませんでした。画面と壁紙設定をご確認ください。', displayFailed: 'デスクトップの状態を取得できません。Windows の壁紙設定をご確認ください。', lockFailed: '壁紙は適用されました。ロック画面の同期に失敗しました。',
     aiExitResults: 'AI 結果を閉じる ×', aiSearching: 'AI がウェブを検索中…', aiNoResults: '一致する高解像度壁紙が見つかりません',
     aiSearchTitle: 'AI ウェブ検索', aiSearchNote: 'OpenAI 互換 API または Google Gemini API を設定して自然言語で壁紙を検索します。キーはこの端末にのみ保存されます。',
     aiBaseUrlPh: 'API BASE URL（空欄で既定値）', aiModelPh: 'MODEL（例: deepseek-chat / gemini-2.5-flash）',
@@ -694,6 +706,7 @@ function paintClearFilters() {
 function clearFilters() {
   S.scope = 'all'; S.genre = 'all'; S.tone = 'any'; S.ratio = 'any';
   S.resolution = 'any'; S.query = '';
+  cancelAiSearch();
   S.aiResults = null; S.aiMeta = null;
   $('#search').value = '';
   resetOnlineSearch();
@@ -726,7 +739,9 @@ function paintAiBanner() {
   const banner = $('#ai-banner');
   const text = $('#ai-banner-text');
   if (!banner || !text) return;
-  if (!S.aiResults) {
+  $('#btn-ai-cancel').hidden = !S.aiBusy;
+  $('#btn-ai-exit').hidden = S.aiBusy;
+  if (!S.aiResults && !S.aiBusy) {
     banner.hidden = true;
     text.textContent = '';
     layout();
@@ -737,15 +752,27 @@ function paintAiBanner() {
     ? `✦ AI (${(meta.model || meta.provider || 'API').toUpperCase()})`
     : `✦ ${t('aiFallbackTag')}`;
   const channels = (meta.channels || []).map(c => `${c.name} ${c.count}`).join(' · ');
-  const errHint = meta.aiError ? ` · AI fallback: ${meta.aiError.slice(0, 36)}` : '';
-  const summary = meta.plan?.summary ? `${meta.plan.summary}` : '';
-  const parts = [tag, summary, channels].filter(Boolean);
-  text.textContent = parts.join(' · ') + errHint;
+  const progress = S.aiBusy ? (meta.total ? t('aiSearching') + ' ' + meta.completed + '/' + meta.total : t('aiSearching')) : '';
+  const failed = meta.failed?.length ? t('aiPartialFailure') + ' · ' + meta.failed.join(' / ') : '';
+  const parts = [progress, meta.plan ? tag : '', meta.plan?.summary, channels, failed].filter(Boolean);
+  text.textContent = parts.join(' · ');
+  text.title = text.textContent;
   banner.hidden = false;
   layout();
 }
 
+let aiRequestId = 0;
+
+function cancelAiSearch() {
+  if (!S.aiBusy) return false;
+  api.aiCancel(aiRequestId++);
+  S.aiBusy = false;
+  paintAiMode();
+  return true;
+}
+
 function exitAiResults() {
+  cancelAiSearch();
   if (!S.aiResults) return;
   S.aiResults = null;
   S.aiMeta = null;
@@ -756,46 +783,45 @@ function exitAiResults() {
   renderSearch();
 }
 
+function updateAiResults(result) {
+  S.aiResults = result.items || [];
+  S.aiMeta = result;
+  paintAiBanner();
+  paintClearFilters();
+  renderSearch(false, true);
+}
+
 async function submitAiSearch() {
   const prompt = $('#search').value.trim();
-  if (!prompt || S.aiBusy) return;
+  if (!prompt) return;
+  cancelAiSearch();
+  const id = ++aiRequestId;
   S.query = prompt;
   closeSuggestions();
   rememberSearch(prompt);
   S.aiBusy = true;
+  S.aiSortActive = false;
+  $('#grid').scrollTop = 0;
   paintAiMode();
-  toast(t('aiSearching'));
+  updateAiResults({});
   let result;
   try {
     const primary = previewMonitors()[0];
     const displayRatio = primary ? formatAspectLabel(primary.width, primary.height) : formatAspectLabel(stageW, stageH);
     const displayRatioBucket = primary ? ratioOf(primary.width, primary.height) : ratioOf(stageW, stageH);
-    result = await api.aiSearch(prompt, {
-      genre: S.genre,
-      tone: S.tone,
-      ratio: S.ratio,
-      resolution: S.resolution,
-      displayRatio,
-      displayRatioBucket
+    result = await api.aiSearch(id, prompt, {
+      genre: S.genre, tone: S.tone, ratio: S.ratio, resolution: S.resolution, displayRatio, displayRatioBucket
     });
-  } catch (e) {
-    result = { ok: false, error: String(e.message || e), items: [] };
+  } catch {
+    result = { ok: false };
   }
+  if (id !== aiRequestId) return;
   S.aiBusy = false;
   paintAiMode();
-  if (!result || !result.ok) {
-    toast(`${t('failedLabel')} / ${(result?.error || 'unknown').slice(0, 36)}`);
-    return;
-  }
-  S.aiResults = result.items || [];
-  S.aiMeta = result;
-  S.aiSortActive = false;
-  paintAiBanner();
-  paintClearFilters();
-  $('#grid').scrollTop = 0;
-  applyFilters();
-  render();
-  toast(S.filtered.length ? `✦ ${pad(S.filtered.length)} ${t('images')}` : t('aiNoResults'));
+  if (result?.ok) updateAiResults(result);
+  else paintAiBanner();
+  const failed = !result?.ok || (!result.items?.length && result.failed?.length);
+  toast(failed ? t('aiSearchFailed') : S.filtered.length ? '✦ ' + pad(S.filtered.length) + ' ' + t('images') : t('aiNoResults'));
 }
 
 function setFavorites(favorites) {
@@ -1430,7 +1456,8 @@ function openDetail(item, card, direction = 0) {
   const idx = S.filtered.findIndex(x => x.id === item.id) + 1;
   $('#detail-index').textContent = `${pad(idx)} / ${pad(S.filtered.length)}`;
   paintDetailFavorite();
-  $('#receipt').textContent = '';
+  $('#receipt').textContent = $('#receipt').title = '';
+  setApplyRetry(false);
   paintSide();
   toast(`${t('opened')} · ${pad(idx)} / ${pad(S.filtered.length)}`);
 
@@ -1602,12 +1629,21 @@ function bindPreviewControls() {
 }
 
 /* ---------------- apply / export / mode ---------------- */
+function setApplyRetry(retry) {
+  const label = $('#apply-label');
+  label.dataset.i18n = retry ? 'retryApply' : 'apply';
+  label.textContent = t(label.dataset.i18n);
+}
 async function applyCurrent() {
   if (!S.current || S.busy) return;
   flushFraming();
   S.busy = true;
-  $('#apply-bar').classList.add('is-busy');
-  $('#receipt').textContent = t('preparingWallpaper');
+  const itemId = S.current.id;
+  const button = $('#apply-bar');
+  button.classList.add('is-busy');
+  button.disabled = true;
+  $('#receipt').title = '';
+  $('#receipt').textContent = t('readDisplay');
   let r;
   try {
     const topology = previewMonitors().map(({ id, x, y, width, height }) => ({ id, x, y, width, height }));
@@ -1618,20 +1654,27 @@ async function applyCurrent() {
     });
   }
   catch (e) { r = { ok: false, error: String(e.message || e) }; }
+  if (r.code === 'DESKTOP_CHANGED') await api.readStatus(true).catch(() => {});
   S.busy = false;
-  $('#apply-bar').classList.remove('is-busy');
+  button.classList.remove('is-busy');
+  button.disabled = false;
+  if (S.current?.id !== itemId) return;
+  const receipt = $('#receipt');
   if (!r.ok) {
-    const receipt = $('#receipt');
     receipt.title = r.error || '';
-    const messageKey = { IMAGE_NETWORK: 'imageNetworkError', DESKTOP_CHANGED: 'desktopChanged' }[r.code];
-    if (r.code === 'DESKTOP_CHANGED') api.readStatus(true);
-    receipt.textContent = messageKey ? t(messageKey) : `${t('failedLabel')} / ${r.stage || 'engine'} / ${r.error || 'unknown'}`;
-    toast(t('applyFailed')); return;
+    const message = { IMAGE_NETWORK: 'imageNetworkError', IMAGE_SOURCE: 'imageRejected',
+      IMAGE_MISSING: 'imageMissing', IMAGE_DECODE: 'imageDecode', DESKTOP_CHANGED: 'desktopChanged' }[r.code]
+      || { download: 'imageNetworkError', prepare: 'imageDecode', compose: 'composeFailed', write: 'writeFailed' }[r.stage]
+      || 'displayFailed';
+    receipt.textContent = t(message);
+    setApplyRetry(true);
+    toast(t('applyFailed'));
+    return;
   }
-  $('#receipt').title = '';
-  $('#receipt').textContent =
-    `${t('okLabel')} / ${r.style.toUpperCase()} / ${t('display')} ${r.targetCount}` +
-    (r.lock ? ` / LOCK ${r.lock.ok ? 'OK' : 'FAILED'}` : '');
+  setApplyRetry(false);
+  receipt.title = r.lock?.error || '';
+  receipt.textContent = r.lock && !r.lock.ok ? t('lockFailed') :
+    t('okLabel') + ' / ' + r.style.toUpperCase() + ' / ' + t('display') + ' ' + r.targetCount;
   const detail = $('#detail');
   detail.classList.remove('is-applied');
   void detail.offsetWidth;
@@ -1655,6 +1698,54 @@ async function desktopAction(action, success, selector) {
   output.textContent = message;
   toast(result.ok ? message : t('failedLabel'));
 }
+function localFramings() {
+  return Object.keys(localStorage).filter(key => key.startsWith(FRAMING_KEY_PREFIX)).map(key => {
+    const id = key.slice(FRAMING_KEY_PREFIX.length);
+    return [id, readFraming(id)];
+  });
+}
+
+async function transferBackup(importing) {
+  const output = $('#backup-status');
+  const buttons = [$('#btn-export-backup'), $('#btn-import-backup')];
+  if (buttons.some(button => button.disabled)) return;
+  buttons.forEach(button => { button.disabled = true; });
+  output.textContent = t('checking');
+  output.title = '';
+  try {
+    const result = await (importing ? api.importBackup() : api.exportBackup(localFramings()));
+    if (result.canceled) { output.textContent = ''; return; }
+    if (!result.ok) {
+      output.title = result.error || '';
+      const message = { BACKUP_IMAGE_MISSING: 'backupImageMissing', BACKUP_INVALID: 'backupInvalid',
+        BACKUP_TOO_LARGE: 'backupTooLarge', BACKUP_IMAGE_UNSUPPORTED: 'backupImageUnsupported' }[result.code];
+      output.textContent = t(message || 'backupError');
+      return;
+    }
+    let storageFailed = false;
+    if (importing) {
+      setFavorites(result.favorites);
+      for (const [id, frame] of result.framings) {
+        const key = FRAMING_KEY_PREFIX + id;
+        try { if (localStorage.getItem(key) === null) localStorage.setItem(key, JSON.stringify(frame)); }
+        catch { storageFailed = true; }
+      }
+      renderSearch(false, true);
+    }
+    const { favorites, framings, profiles } = result.count;
+    output.textContent = [
+      t(importing ? 'backupImported' : 'backupExported'),
+      favorites + ' ' + t('backupFavorites'), framings + ' ' + t('backupFramings'), profiles + ' ' + t('backupProfiles'),
+      result.unmatched ? t('backupUnmatched') : '', storageFailed ? t('backupStorageFailed') : ''
+    ].filter(Boolean).join(' · ');
+  } catch (error) {
+    output.title = error.message;
+    output.textContent = t('backupError');
+  } finally {
+    buttons.forEach(button => { button.disabled = false; });
+  }
+}
+
 async function saveImageAs() {
   if (!S.current) return;
   toast(t('savingImage'));
@@ -2054,7 +2145,12 @@ function bind() {
       exitAiResults();
     }
   });
-  $('#btn-ai-exit')?.addEventListener('click', exitAiResults);
+  $('#btn-ai-exit').addEventListener('click', exitAiResults);
+  $('#btn-ai-cancel').addEventListener('click', () => {
+    if (!cancelAiSearch()) return;
+    paintAiBanner();
+    toast(t('aiStopped'));
+  });
   $('#btn-win-mode')?.addEventListener('click', toggleWindowMode);
   $('#btn-win-hide')?.addEventListener('click', () => api.hide());
   $('#btn-clear-filters')?.addEventListener('click', clearFilters);
@@ -2077,6 +2173,8 @@ function bind() {
   $('#apply-bar').addEventListener('click', applyCurrent);
   $('#btn-undo-wallpaper').addEventListener('click', () => desktopAction(api.undoWallpaper, 'wallpaperUndone', '#receipt'));
   $('#btn-save-desktop-profile').addEventListener('click', () => desktopAction(api.saveDesktopProfile, 'desktopProfileSaved', '#desktop-profile-status'));
+  $('#btn-export-backup').addEventListener('click', () => transferBackup(false));
+  $('#btn-import-backup').addEventListener('click', () => transferBackup(true));
   $('#btn-restore-desktop-profile').addEventListener('click', () => desktopAction(api.restoreDesktopProfile, 'desktopProfileRestored', '#desktop-profile-status'));
   $('#btn-fav').addEventListener('click', toggleFav);
   $('#btn-rename-favorite').addEventListener('click', openFavoriteNameDialog);
@@ -2267,8 +2365,11 @@ function bind() {
 }
 
 function bindApiEvents() {
+  api.on('ai:progress', ({ id, result }) => {
+    if (S.aiBusy && id === aiRequestId) updateAiResults(result);
+  });
   api.on('wallpaper:applyProgress', stage => {
-    const key = { download: 'downloadingWallpaper', prepare: 'preparingWallpaper', write: 'applying' }[stage];
+    const key = { download: 'downloadingWallpaper', prepare: 'preparingWallpaper', compose: 'composeWallpaper', write: 'applying', lock: 'applyLock' }[stage];
     if (S.busy && key) $('#receipt').textContent = t(key);
   });
   api.on('wallhaven:updated', ({ added, status, replace }) => {

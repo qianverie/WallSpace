@@ -9,6 +9,14 @@ const WINDOWS_STYLES = ['center', 'tile', 'stretch', 'fit', 'fill', 'span'];
 const keyOf = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const samePath = (a, b) => (a || '').toLowerCase() === (b || '').toLowerCase();
 const topologyKey = monitors => keyOf(monitors.map(m => [m.id.toLowerCase(), m.x, m.y, m.width, m.height]).sort());
+
+function matchDisplayLayout(saved, connected) {
+  if (saved.length !== connected.length) return null;
+  const geometry = ({ x, y, width, height }) => [x, y, width, height].join(',');
+  const byGeometry = new Map(connected.map(monitor => [geometry(monitor), monitor]));
+  const matches = saved.map(monitor => byGeometry.get(geometry(monitor)));
+  return matches.every(Boolean) && new Set(matches).size === connected.length ? matches : null;
+}
 function touchFile(file) {
   try {
     const now = new Date();
@@ -105,12 +113,13 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
     if (before.flags & 6) throw new Error('Windows slideshow or remote-session wallpaper is active');
     const selected = style === 'span' ? null : options.monitorId;
     const targets = selected ? before.monitors.filter(m => m.id === selected) : before.monitors;
-    if (!targets.length) throw new Error('The selected display is no longer connected');
+    if (!targets.length) return { ok: false, code: 'DESKTOP_CHANGED', error: 'The selected display is no longer connected' };
     if (options.topology && topologyKey(options.topology) !== topologyKey(before.monitors)) {
       return { ok: false, code: 'DESKTOP_CHANGED', error: 'Display layout changed. Review the preview and try again.' };
     }
     const image = await prepareImage(item, options.progress);
     const { source } = image;
+    options.progress?.('compose');
     const allBounds = monitorBounds(before.monitors);
     const span = style === 'span';
     const normalizePosition = !selected || before.position === 1 || before.position === 5;
@@ -190,7 +199,17 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
 
   async function restoreProfile(quiet = false) {
     const current = await read();
-    const profile = store.state.desktop.profiles[topologyKey(current.monitors)];
+    const profiles = store.state.desktop.profiles;
+    let profile = profiles[topologyKey(current.monitors)];
+    if (!profile && !quiet) {
+      for (const candidate of Object.values(profiles)) {
+        if (!candidate.portable) continue;
+        const matches = matchDisplayLayout(candidate.monitors, current.monitors);
+        if (!matches) continue;
+        profile = { ...candidate, monitors: candidate.monitors.map((m, i) => ({ ...m, id: matches[i].id })) };
+        break;
+      }
+    }
     if (!profile) {
       if (quiet) return null;
       throw new Error('No saved layout for these displays');
@@ -215,6 +234,7 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
     };
     collect(activeDesktop);
     keep(store.state.settings.lastWallpaperPath);
+    for (const item of store.state.favorites) keep(item.localPath);
     const undoState = store.state.desktop.undo;
     if (undoState) {
       collect(undoState.before);
@@ -260,7 +280,7 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
     return { bytes, count };
   }
 
-  return { read, apply, undo, saveProfile, restoreProfile, pinnedFiles, pruneImages, reclaimableImageStats };
+  return { read, apply, undo, saveProfile, restoreProfile, resolveWallpaper: originalOrBackup, pinnedFiles, pruneImages, reclaimableImageStats };
 }
 
-module.exports = { createDesktop };
+module.exports = { createDesktop, topologyKey, matchDisplayLayout };

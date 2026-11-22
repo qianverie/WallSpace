@@ -54,6 +54,8 @@
 2. 下载 [Electron v45.2.3 Windows x64 运行时](https://github.com/electron/electron/releases/tag/v45.2.3)（`electron-v45.2.3-win32-x64.zip`），解压至项目根目录下的 `runtime/`，确保存在 `runtime/electron.exe`。
 3. 双击 `start.cmd` 启动。
 
+需要桌面和开始菜单入口时，在项目目录运行 `powershell -NoProfile -File .\tools\New-WallspaceShortcuts.ps1`。创建后可从 Windows 菜单将 Wallspace 固定到任务栏。
+
 > `runtime/`、`data/` 和 `cache/` 已写入 `.gitignore`，不会纳入版本控制。本机配置、收藏、历史记录与个人 API 凭据仅保存在本地 `data/state.json`。
 
 ---
