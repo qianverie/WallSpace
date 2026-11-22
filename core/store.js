@@ -15,7 +15,6 @@ const DEFAULTS = {
     ratio: 'any',
     query: '',
     lastWallpaper: null,
-    lockScreenSync: false,
     autoStart: false
   },
   credentials: {

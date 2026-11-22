@@ -38,6 +38,7 @@ const I18N = {
     motionPreviewFailed: '无法预览此视频',
     lockScreen: '锁屏', on: '开', off: '关', monitor: '显示器', allDisplays: '全部', oneDisplay: '1 台显示器',
     apply: '应用到桌面',
+    applyLockScreen: '应用到锁屏', lockApplied: '锁屏壁纸已应用',
     modeFill: '覆盖', modeStretch: '拉伸', modeFit: '适应', modeTile: '平铺', modeCenter: '居中', modeSpan: '跨屏',
     noteFill: '覆盖 · 等比裁切填满', noteStretch: '拉伸 · 铺满不保比例', noteFit: '适应 · 等比完整显示',
     noteTile: '平铺 · 原尺寸重复', noteCenter: '居中 · 原尺寸居中', noteSpan: '跨屏 · 延伸过所有屏幕',
@@ -49,7 +50,6 @@ const I18N = {
     filtersCleared: '筛选已清空', savedToast: '已收藏', removed: '已取消收藏',
     refreshing: '正在刷新图源', indexed: '张图已入索引', searchUnavailable: '部分在线图源暂不可用', usingCache: '使用缓存',
     imageSaved: '图片已保存', cancelled: '已取消', saveFailed: '保存失败', savingImage: '正在保存图片',
-    oneDisplayToast: '检测到一台显示器 / 多屏已就绪',
     saveFraming: '保存构图', resetFraming: '重置构图', framingSaved: '已保存此图构图', framingReset: '已恢复默认构图',
     framingControls: 'Ctrl＋滚轮缩放 · 拖动移动 · 滚轮翻阅',
     undoWallpaper: '撤销上次应用', wallpaperUndone: '已恢复上次桌面壁纸',
@@ -57,7 +57,7 @@ const I18N = {
     exportBackup: '导出图库备份', importBackup: '导入图库备份', backupExported: '已导出备份', backupImported: '已导入备份', backupFramings: '项构图', backupProfiles: '套方案', backupFavorites: '张收藏', backupUnmatched: '部分方案需匹配的屏幕布局', backupInvalid: '备份格式无效或文件已损坏', backupTooLarge: '备份超过大小上限', backupImageMissing: '部分原图找不到，请恢复原文件后再导出', backupImageUnsupported: '部分原图格式不受支持', backupStorageFailed: '无法保存全部构图，本机存储空间不足或不可用', backupError: '无法读写备份文件', backupNote: '包含收藏、保存的构图和显示器方案。导入时保留本机已有条目。',
     saveDesktopProfile: '保存显示器方案', restoreDesktopProfile: '恢复显示器方案',
     desktopProfileSaved: '已保存当前屏幕方案', desktopProfileRestored: '已恢复屏幕方案',
-    lockOn: '锁屏同步已开', lockOff: '锁屏同步已关', allDisplaysToast: '全部显示器',
+    allDisplaysToast: '全部显示器',
     noSourceLink: '没有来源链接', nothingChanged: '没有改动', credentialsSaved: '凭据已保存在本机',
     localFolderAdded: '本地文件夹已添加', cacheCleared: '缓存已清理', cacheClearFailed: '缓存清理失败',
     autoStartOn: '开机自启已开', autoStartOff: '开机自启已关', localFolderNone: '没有本地文件夹',
@@ -73,7 +73,7 @@ const I18N = {
     unsplashKey: 'UNSPLASH 访问密钥', pexelsKey: 'PEXELS API 密钥',
     moreWallhaven: '更多壁纸', loadingMore: '正在找图…', retryMore: '重试加载',
     waitingForImages: '正在寻找符合筛选的壁纸…', loadingPaused: '连接不稳定，自动续页已暂停，可点「重试加载」',
-    cacheLabel: '缓存', files: '个文件', lockAvailable: '锁屏 / WINRT 可用', lockBlocked: '锁屏 / 受限',
+    cacheLabel: '缓存', files: '个文件', lockAvailable: '锁屏壁纸 / 可用', lockBlocked: '锁屏 / 受限',
     okLabel: '成功', failedLabel: '失败',
     opened: '已展开', closed: '已关闭', settingsOpened: '设置已打开', settingsClosed: '设置已关闭',
     modeWindow: '已切到窗口', modeFullscreen: '已切到全屏', nextItem: '下一张', prevItem: '上一张',
@@ -81,8 +81,8 @@ const I18N = {
     detailPureHint: '按住空格纯净预览 · 0 复位构图', framingHudZoom: '缩放',
     aiSearchToggle: '✦ AI 全网', aiSearchPlaceholder: '描述想要的画面、风格或色调，回车 AI 全网搜壁纸…',
     cancelAi: '取消搜索', aiPartialFailure: '部分图源未响应', aiSearchFailed: '图源暂不可用，请稍后重试', aiStopped: '已取消搜索',
-    readDisplay: '正在检查显示器', composeWallpaper: '正在生成桌面构图', applyLock: '正在同步锁屏', retryApply: '重试应用',
-    imageMissing: '找不到原图，请检查本地文件位置', imageDecode: '无法读取原图，请检查文件或来源', imageRejected: '图源拒绝访问或未返回有效原图，请检查来源', composeFailed: '无法生成构图，请调整缩放或换一张图后重试', writeFailed: 'Windows 未能写入壁纸，请检查显示器和系统壁纸设置后重试', displayFailed: '无法读取桌面状态，请检查 Windows 壁纸设置后重试', lockFailed: '桌面已应用，锁屏同步失败',
+    readDisplay: '正在检查显示器', composeWallpaper: '正在生成桌面构图', applyLock: '正在写入锁屏', retryApply: '重试应用',
+    imageMissing: '找不到原图，请检查本地文件位置', imageDecode: '无法读取原图，请检查文件或来源', imageRejected: '图源拒绝访问或未返回有效原图，请检查来源', composeFailed: '无法生成构图，请调整缩放或换一张图后重试', writeFailed: 'Windows 未能写入壁纸，请检查显示器和系统壁纸设置后重试', displayFailed: '无法读取桌面状态，请检查 Windows 壁纸设置后重试', lockFailed: 'Windows 未能更新锁屏，请检查个性化设置后重试',
     aiExitResults: '退出 AI 结果 ×', aiSearching: 'AI 正在全网搜图…', aiNoResults: '全网未找到匹配的高清壁纸',
     aiSearchTitle: 'AI 全网搜索', aiSearchNote: '支持任意 OpenAI 兼容接口（DeepSeek / 硅基流动 / OpenRouter / 中转站）或 Google Gemini API，凭据仅保存在本机。',
     aiBaseUrlPh: 'API BASE URL（留空使用官方默认，如 https://api.deepseek.com/v1）',
@@ -114,6 +114,7 @@ const I18N = {
     motionPreviewFailed: 'This video cannot be previewed.',
     lockScreen: 'LOCK SCREEN', on: 'ON', off: 'OFF', monitor: 'MONITOR', allDisplays: 'ALL', oneDisplay: '1 DISPLAY',
     apply: 'APPLY TO DESKTOP',
+    applyLockScreen: 'APPLY TO LOCK SCREEN', lockApplied: 'LOCK SCREEN WALLPAPER APPLIED',
     modeFill: 'FILL', modeStretch: 'STRETCH', modeFit: 'FIT', modeTile: 'TILE', modeCenter: 'CENTER', modeSpan: 'SPAN',
     noteFill: 'Fill · crop to cover, keep ratio', noteStretch: 'Stretch · fill, ignore ratio', noteFit: 'Fit · show whole image',
     noteTile: 'Tile · repeat at original size', noteCenter: 'Center · original size', noteSpan: 'Span · extend across displays',
@@ -125,7 +126,6 @@ const I18N = {
     filtersCleared: 'FILTERS CLEARED', savedToast: 'SAVED', removed: 'REMOVED',
     refreshing: 'REFRESHING SOURCES', indexed: 'IMAGES INDEXED', searchUnavailable: 'SOME ONLINE SOURCES ARE UNAVAILABLE', usingCache: 'CACHED',
     imageSaved: 'IMAGE SAVED', cancelled: 'CANCELLED', saveFailed: 'SAVE FAILED', savingImage: 'SAVING IMAGE',
-    oneDisplayToast: 'ONE DISPLAY DETECTED / MULTI-MONITOR READY',
     saveFraming: 'SAVE FRAMING', resetFraming: 'RESET FRAMING', framingSaved: 'FRAMING SAVED FOR THIS IMAGE', framingReset: 'DEFAULT FRAMING RESTORED',
     framingControls: 'Ctrl + wheel to zoom · Drag to pan · Wheel to browse',
     undoWallpaper: 'UNDO LAST APPLY', wallpaperUndone: 'PREVIOUS DESKTOP WALLPAPER RESTORED',
@@ -133,7 +133,7 @@ const I18N = {
     exportBackup: 'Export library backup', importBackup: 'Import library backup', backupExported: 'Backup exported', backupImported: 'Backup imported', backupFramings: 'framings', backupProfiles: 'display profiles', backupFavorites: 'favorites', backupUnmatched: 'Some profiles require a matching display layout', backupInvalid: 'Invalid or damaged backup file', backupTooLarge: 'Backup exceeds the size limit', backupImageMissing: 'An original image is missing. Restore the file before exporting.', backupImageUnsupported: 'An original image uses an unsupported format.', backupStorageFailed: 'Some framings could not be saved in local storage', backupError: 'Could not read or write the backup file', backupNote: 'Includes favorites, saved framings and display profiles. Import preserves existing entries.',
     saveDesktopProfile: 'SAVE DISPLAY PROFILE', restoreDesktopProfile: 'RESTORE DISPLAY PROFILE',
     desktopProfileSaved: 'DISPLAY PROFILE SAVED', desktopProfileRestored: 'DISPLAY PROFILE RESTORED',
-    lockOn: 'LOCK SCREEN SYNC ON', lockOff: 'LOCK SCREEN SYNC OFF', allDisplaysToast: 'ALL DISPLAYS',
+    allDisplaysToast: 'ALL DISPLAYS',
     noSourceLink: 'NO SOURCE LINK', nothingChanged: 'NOTHING CHANGED', credentialsSaved: 'CREDENTIALS SAVED LOCALLY',
     localFolderAdded: 'LOCAL FOLDER ADDED', cacheCleared: 'CACHE CLEARED', cacheClearFailed: 'CACHE CLEAR FAILED',
     autoStartOn: 'AUTO START ON', autoStartOff: 'AUTO START OFF', localFolderNone: 'NO LOCAL FOLDER',
@@ -158,7 +158,7 @@ const I18N = {
     aiSearchToggle: '✦ AI WEB', aiSearchPlaceholder: 'DESCRIBE SCENE, MOOD OR STYLE — PRESS ENTER FOR AI WEB SEARCH…',
     cancelAi: 'Cancel search', aiPartialFailure: 'Some sources failed', aiSearchFailed: 'Sources are temporarily unavailable. Try again shortly.', aiStopped: 'Search canceled',
     readDisplay: 'Checking displays', composeWallpaper: 'Rendering desktop framing', applyLock: 'Updating the lock screen', retryApply: 'Retry application',
-    imageMissing: 'Original image missing. Check the local file.', imageDecode: 'Could not read the original. Check the file or source.', imageRejected: 'The source denied access or returned an invalid image. Check the source.', composeFailed: 'Could not render the framing. Adjust the zoom or try another image.', writeFailed: 'Windows could not update the wallpaper. Check your displays and wallpaper settings.', displayFailed: 'Could not read the desktop status. Check the Windows wallpaper settings and retry.', lockFailed: 'Wallpaper applied. Lock screen update failed.',
+    imageMissing: 'Original image missing. Check the local file.', imageDecode: 'Could not read the original. Check the file or source.', imageRejected: 'The source denied access or returned an invalid image. Check the source.', composeFailed: 'Could not render the framing. Adjust the zoom or try another image.', writeFailed: 'Windows could not update the wallpaper. Check your displays and wallpaper settings.', displayFailed: 'Could not read the desktop status. Check the Windows wallpaper settings and retry.', lockFailed: 'Windows could not update the lock screen. Check personalization settings and retry.',
     aiExitResults: 'EXIT AI RESULTS ×', aiSearching: 'AI SEARCHING THE WEB…', aiNoResults: 'NO MATCHING HD WALLPAPERS FOUND',
     aiSearchTitle: 'AI WEB SEARCH', aiSearchNote: 'Connect any OpenAI-compatible API (DeepSeek / OpenRouter / Ollama) or Google Gemini API. Keys stay on this machine only.',
     aiBaseUrlPh: 'API BASE URL (OPTIONAL, e.g. https://api.deepseek.com/v1)',
@@ -190,6 +190,7 @@ const I18N = {
     motionPreviewFailed: 'この動画をプレビューできません。',
     lockScreen: 'ロック画面', on: 'オン', off: 'オフ', monitor: 'モニター', allDisplays: 'すべて', oneDisplay: '1 ディスプレイ',
     apply: 'デスクトップに適用',
+    applyLockScreen: 'ロック画面に適用', lockApplied: 'ロック画面の壁紙を適用しました',
     modeFill: '塗りつぶし', modeStretch: '引き伸ばし', modeFit: '全体表示', modeTile: '並べて表示', modeCenter: '中央', modeSpan: '画面横断',
     noteFill: '塗りつぶし · 比率を保ち裁断', noteStretch: '引き伸ばし · 比率無視', noteFit: '全体表示 · 比率維持',
     noteTile: '並べて表示 · 元サイズ', noteCenter: '中央 · 元サイズ', noteSpan: '画面横断 · 全ディスプレイへ',
@@ -201,7 +202,6 @@ const I18N = {
     filtersCleared: '絞り込みを解除', savedToast: '保存しました', removed: '解除しました',
     refreshing: 'ソースを更新中', indexed: '枚を索引化', searchUnavailable: '一部のオンラインソースに接続できません', usingCache: 'キャッシュ使用中',
     imageSaved: '画像を保存しました', cancelled: 'キャンセル', saveFailed: '保存失敗', savingImage: '画像を保存中',
-    oneDisplayToast: 'ディスプレイ 1 台 / マルチ対応済み',
     saveFraming: '構図を保存', resetFraming: '構図をリセット', framingSaved: 'この画像の構図を保存しました', framingReset: '既定の構図に戻しました',
     framingControls: 'Ctrl＋ホイールで拡大縮小 · ドラッグで移動 · ホイールで画像切替',
     undoWallpaper: '最後の適用を取り消す', wallpaperUndone: '以前の壁紙に戻しました',
@@ -209,7 +209,7 @@ const I18N = {
     exportBackup: 'ライブラリをエクスポート', importBackup: 'ライブラリをインポート', backupExported: 'バックアップを保存しました', backupImported: 'バックアップを読み込みました', backupFramings: '件の構図', backupProfiles: '件の画面設定', backupFavorites: '件のお気に入り', backupUnmatched: '一部の画面設定は一致する画面構成が必要です', backupInvalid: '無効または破損したバックアップです', backupTooLarge: 'バックアップがサイズ制限を超えています', backupImageMissing: '元画像がありません。ファイルを復元してから書き出してください。', backupImageUnsupported: '未対応の形式の元画像が含まれています。', backupStorageFailed: '一部の構図をローカルに保存できませんでした', backupError: 'バックアップを読み書きできませんでした', backupNote: 'お気に入り、保存した構図、画面設定を含みます。既存のデータは保持されます。',
     saveDesktopProfile: '画面設定を保存', restoreDesktopProfile: '画面設定を復元',
     desktopProfileSaved: '画面設定を保存しました', desktopProfileRestored: '画面設定を復元しました',
-    lockOn: 'ロック画面同期 オン', lockOff: 'ロック画面同期 オフ', allDisplaysToast: 'すべてのディスプレイ',
+    allDisplaysToast: 'すべてのディスプレイ',
     noSourceLink: '出典リンクなし', nothingChanged: '変更なし', credentialsSaved: '認証情報を保存しました',
     localFolderAdded: 'ローカルフォルダを追加', cacheCleared: 'キャッシュを削除', cacheClearFailed: '削除失敗',
     autoStartOn: '自動起動 オン', autoStartOff: '自動起動 オフ', localFolderNone: 'ローカルフォルダなし',
@@ -233,8 +233,8 @@ const I18N = {
     detailPureHint: 'Space長押しで純粋プレビュー · 0でリセット', framingHudZoom: '拡大',
     aiSearchToggle: '✦ AI 検索', aiSearchPlaceholder: '欲しい壁紙の雰囲気や色味を入力し、Enter で AI 全網検索…',
     cancelAi: '検索を中止', aiPartialFailure: '一部の画像ソースに接続できませんでした', aiSearchFailed: '画像ソースに接続できません。後でもう一度お試しください。', aiStopped: '検索を中止しました',
-    readDisplay: '画面を確認しています', composeWallpaper: 'デスクトップの構図を生成しています', applyLock: 'ロック画面を同期しています', retryApply: '適用を再試行',
-    imageMissing: '元画像が見つかりません。ファイルの場所をご確認ください。', imageDecode: '元画像を読み込めません。ファイルまたは出典をご確認ください。', imageRejected: '出典にアクセスできないか、無効な画像が返されました。', composeFailed: '構図を生成できませんでした。ズームを調整するか別の画像をお試しください。', writeFailed: 'Windows が壁紙を設定できませんでした。画面と壁紙設定をご確認ください。', displayFailed: 'デスクトップの状態を取得できません。Windows の壁紙設定をご確認ください。', lockFailed: '壁紙は適用されました。ロック画面の同期に失敗しました。',
+    readDisplay: '画面を確認しています', composeWallpaper: 'デスクトップの構図を生成しています', applyLock: 'ロック画面を更新しています', retryApply: '適用を再試行',
+    imageMissing: '元画像が見つかりません。ファイルの場所をご確認ください。', imageDecode: '元画像を読み込めません。ファイルまたは出典をご確認ください。', imageRejected: '出典にアクセスできないか、無効な画像が返されました。', composeFailed: '構図を生成できませんでした。ズームを調整するか別の画像をお試しください。', writeFailed: 'Windows が壁紙を設定できませんでした。画面と壁紙設定をご確認ください。', displayFailed: 'デスクトップの状態を取得できません。Windows の壁紙設定をご確認ください。', lockFailed: 'Windows がロック画面を更新できませんでした。個人用設定をご確認ください。',
     aiExitResults: 'AI 結果を閉じる ×', aiSearching: 'AI がウェブを検索中…', aiNoResults: '一致する高解像度壁紙が見つかりません',
     aiSearchTitle: 'AI ウェブ検索', aiSearchNote: 'OpenAI 互換 API または Google Gemini API を設定して自然言語で壁紙を検索します。キーはこの端末にのみ保存されます。',
     aiBaseUrlPh: 'API BASE URL（空欄で既定値）', aiModelPh: 'MODEL（例: deepseek-chat / gemini-2.5-flash）',
@@ -320,7 +320,7 @@ const S = {
   credentials: {}, folders: [], status: null, background: null,
   scope: 'all', genre: 'all', tone: 'any', ratio: 'any', resolution: 'any', sort: 'relevance', query: '',
   filtered: [], current: null, currentCard: null, previewImage: null, framing: DEFAULT_FRAMING,
-  style: 'fill', monitorId: null, monitors: [], syncLock: false, busy: false, undoAvailable: false,
+  style: 'fill', lockStyle: null, lockScreen: false, monitorId: null, monitors: [], busy: false, undoAvailable: false,
   aiMode: false, aiResults: null, aiMeta: null, aiBusy: false, aiProviderDraft: 'openai', aiSortActive: false
 };
 
@@ -335,18 +335,21 @@ let lastHudZoom = -1;
 let hoverPaperTimer = 0;
 let basePaperUrl = null;
 let suggestList = [], suggestIndex = -1, composingSearch = false;
+let suggestionsQuery = null;
 let onlineRequest = 0, onlineSearchKey = '', onlineItems = new Map();
+const wallhavenBrowseFeeds = new Map();
 let wallhavenNextSearchPage, loadingMore = false;
 let autoLoadTimer = 0, wallhavenAutoAfter = 0;
 let autoLoadFailures = 0;
 let refreshQueued = false;
-const GRID_PREFETCH_SCREENS = 1.5;
 const PAGE_LOAD_INTERVAL = 2200;
 const MAX_AUTO_FAILURES = 2;
 let indexedItems = new Map(), recentSearches = loadRecentSearches();
 let favoriteById = new Map();
 const cardItems = new WeakMap();
 const cardsById = new Map();
+const cardBoxes = new WeakMap();
+let gridLayoutFrame = 0;
 const io = new IntersectionObserver(entries => {
   for (const e of entries) {
     if (!e.isIntersecting) continue;
@@ -356,6 +359,8 @@ const io = new IntersectionObserver(entries => {
 }, { root: $('#grid'), rootMargin: '360px 0px' });
 
 /* ---------------- boot ---------------- */
+let paperRevision = 0;
+
 async function boot() {
   const d = await api.bootstrap();
   S.items = d.items || [];
@@ -367,7 +372,6 @@ async function boot() {
   S.folders = d.folders || [];
   S.status = d.status || null;
   S.style = MODES.some(([value]) => value === S.settings.style) ? S.settings.style : 'fill';
-  S.syncLock = Boolean(S.settings.lockScreenSync);
   S.monitors = d.status?.monitors || [];
   if (d.display?.aspect) updateStageAspect(d.display.aspect);
   S.undoAvailable = Boolean(d.undoAvailable);
@@ -383,7 +387,7 @@ async function boot() {
   S.query = '';
   $('#search').value = '';
 
-  setPaper(d.background || (S.items[0] ? thumbOf(S.items[0]) : null));
+  if (S.items[0]) setPaper(thumbOf(S.items[0]));
   paintDate();
   indexCatalog();
   applyI18n();
@@ -393,11 +397,18 @@ async function boot() {
   bindFeedback();
   bindWindowDrag();
   bindApiEvents();
+  api.startSources();
   api.readStatus();
   loadGenreFeed();
   queueWallhavenAutoLoad();
   layout();
-  window.addEventListener('resize', layout);
+  const startupPaperRevision = paperRevision;
+  requestAnimationFrame(() => {
+    $('#boot-curtain').classList.add('is-done');
+    api.readStartupPaper().then(url => {
+      if (url && startupPaperRevision === paperRevision) setPaper(url);
+    }).catch(() => {});
+  });
 
   if (S.settings.pendingFeedback) {
     const key = S.settings.pendingFeedback;
@@ -428,6 +439,7 @@ function layout() {
     const scale = s || 1;
     root.setProperty('--suggestions-left', (input.left - stage.left) / scale + 'px');
     root.setProperty('--grid-top', Math.ceil((lowerEdge - stage.top) / scale + 16) + 'px');
+    queueGridLayout();
     paintGridProgress();
     queueWallhavenAutoLoad();
   });
@@ -588,6 +600,7 @@ function closeSuggestions() {
   $('#btn-clear-search-history').hidden = true;
   suggestList = [];
   suggestIndex = -1;
+  suggestionsQuery = null;
   if (wasOpen) layout();
 }
 
@@ -595,11 +608,9 @@ function acceptSuggestion(word) {
   $('#search').value = word;
   S.query = word;
   resetOnlineSearch();
-  rememberSearch(word);
-  closeSuggestions();
   $('#grid').scrollTop = 0;
   renderSearch();
-  toast(`${word} · ${pad(S.filtered.length)}`);
+  submitSearch();
 }
 
 function paintSuggestionActive() {
@@ -614,12 +625,20 @@ function paintSuggestionActive() {
 function updateSuggestions() {
   const input = $('#search');
   const box = $('#suggestions');
-  if (composingSearch || document.activeElement !== input) return;
+  if (S.aiMode || composingSearch || document.activeElement !== input) return;
   const history = !wallpaperSearch.normalize(input.value);
-  suggestList = history ? recentSearches : wallpaperSearch.suggest(scopedItems(), input.value, [], 6, customName);
+  const next = history ? recentSearches : wallpaperSearch.suggest(scopedItems(), input.value, recentSearches, 6, customName);
+  if (suggestionsQuery === input.value && next.length === suggestList.length &&
+      next.every((word, index) => word === suggestList[index])) return;
+  suggestList = next;
   suggestIndex = -1;
+  if (!suggestList.length) {
+    closeSuggestions();
+    suggestionsQuery = input.value;
+    return;
+  }
+  suggestionsQuery = input.value;
   box.replaceChildren();
-  if (!suggestList.length) { closeSuggestions(); return; }
   box.setAttribute('aria-label', t(history ? 'recentSearches' : 'searchPlaceholder'));
   $('#btn-clear-search-history').hidden = !history;
   if (history) input.setAttribute('aria-keyshortcuts', 'Control+Delete');
@@ -655,6 +674,10 @@ function updateSuggestions() {
 function suggestionsOpen() {
   const box = $('#suggestions');
   return !!(box && box.classList.contains('is-on') && suggestList.length);
+}
+
+function refreshSuggestions() {
+  if (suggestIndex < 0 && suggestionsQuery && suggestionsQuery === $('#search').value) updateSuggestions();
 }
 
 /* ---------------- filters ---------------- */
@@ -873,15 +896,18 @@ function matchesFilters(item, defaultTone) {
   return true;
 }
 
-function scopedItems(includeOnline = false) {
+function scopedItems() {
   const archive = S.scope === 'saved' ? S.favorites : S.scope === 'history' ? S.history : null;
+  const browseItems = wallhavenBrowseFeeds.get(wallhavenBrowseKey(true))?.items;
+  const loaded = !onlineItems.size ? browseItems : !browseItems?.size || browseItems === onlineItems
+    ? onlineItems : new Map([...browseItems, ...onlineItems]);
   const items = archive ? archive.map(item => item.genres?.includes(S.genre)
     ? item : indexedItems.get(item.id) || item)
-    : includeOnline && onlineItems.size
-      ? S.items.map(item => onlineItems.get(item.id) || item).concat([...onlineItems.values()].filter(item => !indexedItems.has(item.id)))
+    : loaded?.size
+      ? S.items.map(item => loaded.get(item.id) || item).concat([...loaded.values()].filter(item => !indexedItems.has(item.id)))
       : S.items;
   const named = !archive && S.query.trim() ? S.favorites.filter(item => item.customName &&
-    !indexedItems.has(item.id) && !(includeOnline && onlineItems.has(item.id))) : [];
+    !indexedItems.has(item.id) && !loaded?.has(item.id)) : [];
   return items.concat(named).filter(item => matchesFilters(item, 'neutral'));
 }
 
@@ -893,7 +919,7 @@ function applyFilters() {
     return;
   }
   const words = wallpaperSearch.terms(S.query);
-  S.filtered = scopedItems(true).filter(item => !words.length || (S.scope === 'all' && onlineItems.has(item.id)) ||
+  S.filtered = scopedItems().filter(item => !words.length || (S.scope === 'all' && onlineItems.has(item.id)) ||
     wallpaperSearch.matches(wallpaperSearch.indexWithName(item, customName(item)), words));
   if (S.sort === 'popular') S.filtered.sort(wallpaperSearch.comparePopularity);
   else if (S.sort === 'newest') S.filtered.sort(wallpaperSearch.compareDate);
@@ -965,11 +991,84 @@ function gridAnchor(grid) {
   if (!top) return null;
   let visible;
   for (const card of grid.children) {
-    if (card.offsetTop + card.offsetHeight <= top || card.offsetTop >= top + grid.clientHeight) continue;
-    if (!visible || card.offsetTop < visible.offsetTop) visible = card;
-    if (visible.offsetTop <= top) break;
+    const box = cardBoxes.get(card);
+    if (!box || box.y + box.height <= top || box.y >= top + grid.clientHeight) continue;
+    if (!visible || Math.abs(box.y - top) < Math.abs(visible.y - top)) visible = { id: card.dataset.id, y: box.y };
   }
-  return { top, id: visible?.dataset.id, offset: visible ? top - visible.offsetTop : 0 };
+  return { top, id: visible?.id, offset: visible ? top - visible.y : 0 };
+}
+
+function cardAspect(item, fallback = 16 / 9) {
+  const original = !item.sizeFromThumb && item.width / item.height;
+  if (Number.isFinite(original) && original > 0) return original;
+  const thumbnail = item.thumbWidth / item.thumbHeight;
+  return Number.isFinite(thumbnail) && thumbnail > 0 ? thumbnail : fallback;
+}
+
+function hasSimilarNeighbors(items, index, ratio) {
+  const start = Math.max(0, index - 2);
+  const group = items.slice(start, start + 3);
+  return ratio >= 1 && group.length === 3 &&
+    group.every(item => Math.abs(cardAspect(item, 0) / ratio - 1) < 0.08);
+}
+
+function layoutCards(anchor) {
+  const grid = $('#grid');
+  const style = getComputedStyle(grid);
+  const gap = parseFloat(style.columnGap) || 0;
+  const columns = [0, 0, 0];
+  const width = (grid.clientWidth - (parseFloat(style.paddingRight) || 0) - gap * (columns.length - 1)) / columns.length;
+  if (width <= 0) return;
+  const items = S.filtered;
+  let nextFeatureIndex = 0;
+  let featureColumn = 0;
+  for (let index = 0; index < items.length; index++) {
+    const item = items[index];
+    const card = cardsById.get(item.id);
+    if (!card) continue;
+    const ratio = cardAspect(item);
+    let y = Math.min(...columns);
+    let column = columns.indexOf(y), span = 1;
+    // Break up runs of similarly proportioned images without creating a hole in the shorter column.
+    if (ratio >= 2.3 || (index >= nextFeatureIndex && hasSimilarNeighbors(items, index, ratio))) {
+      for (const i of [featureColumn, 1 - featureColumn]) {
+        const landing = Math.max(columns[i], columns[i + 1]);
+        if (landing > y + gap) continue;
+        column = i;
+        y = landing;
+        span = 2;
+        nextFeatureIndex = index + 7;
+        featureColumn = 1 - i;
+        break;
+      }
+    }
+    const x = column * (width + gap);
+    const cardWidth = width * span + gap * (span - 1);
+    const height = cardWidth / ratio;
+    const previous = cardBoxes.get(card);
+    if (!previous || previous.x !== x || previous.y !== y || previous.width !== cardWidth || previous.height !== height) {
+      cardBoxes.set(card, { x, y, width: cardWidth, height });
+      Object.assign(card.style, { left: x + 'px', top: y + 'px', width: cardWidth + 'px', height: height + 'px' });
+    }
+    columns.fill(y + height + gap, column, column + span);
+  }
+  const contentHeight = Math.max(0, Math.max(...columns) - gap);
+  grid.style.setProperty('--cards-height', contentHeight + 'px');
+  if (anchor) {
+    const card = cardsById.get(anchor.id);
+    const box = card && cardBoxes.get(card);
+    grid.scrollTop = box ? box.y + anchor.offset : anchor.top;
+  }
+}
+
+function queueGridLayout() {
+  if (gridLayoutFrame) return;
+  gridLayoutFrame = requestAnimationFrame(() => {
+    gridLayoutFrame = 0;
+    layoutCards(gridAnchor($('#grid')));
+    paintBackToTop();
+    queueWallhavenAutoLoad();
+  });
 }
 
 function render(appendFrom = 0, preservePosition = false) {
@@ -1024,18 +1123,17 @@ function render(appendFrom = 0, preservePosition = false) {
       io.observe(card);
     }
     updateCard(card, item);
-    card.classList.toggle('is-wide', index % 7 === 2);
     if (card === cursor) cursor = cursor.nextElementSibling;
     else grid.insertBefore(card, cursor);
-    if (card.dataset.id === anchor?.id) anchor.card = card;
   }
-  if (anchor) grid.scrollTop = anchor.card ? anchor.card.offsetTop + anchor.offset : anchor.top;
-  else if (appendFrom) grid.scrollTop = previousTop;
+  layoutCards(anchor);
+  if (appendFrom) grid.scrollTop = previousTop;
   paintSearchCount();
 }
 function updateCard(card, item) {
   const previous = cardItems.get(card);
   cardItems.set(card, item);
+  if (previous && cardAspect(previous) !== cardAspect(item)) queueGridLayout();
   card.classList.toggle('is-fav', isFav(item.id));
   paintItemTitle(card.querySelector('.card-title'), item);
   card.querySelector('.card-fallback').textContent = t('imageUnavailable');
@@ -1050,7 +1148,13 @@ function updateCard(card, item) {
     io.observe(card);
   }
 }
-function thumbOf(item) { return item.thumbUrl || item.fullUrl || ''; }
+function thumbOf(item) {
+  const url = item.thumbUrl || item.fullUrl || '';
+  // Older favorites and cached pages can still contain the cropped variants.
+  if (item.source === 'wallhaven') return url.replace(/^https:\/\/th\.wallhaven\.cc\/(?:small|lg)\//, 'https://th.wallhaven.cc/orig/');
+  if (item.source === 'bing') return url.replace(/_400x240\.jpg(?=\?|$)/i, '_640x360.jpg');
+  return url;
+}
 
 function loadCardImage(card) {
   const img = card.querySelector('img');
@@ -1065,10 +1169,12 @@ function loadCardImage(card) {
     // overwrite real dimensions, and never use it to fake a resolution bucket.
     const current = cardItems.get(card);
     if (current && img.naturalWidth) {
+      const previousAspect = cardAspect(current);
       current.thumbWidth = img.naturalWidth;
       current.thumbHeight = img.naturalHeight;
       if (!current.width || !current.height) current.sizeFromThumb = true;
       if (!current.ratio) current.ratio = ratioOf(current.thumbWidth, current.thumbHeight);
+      if (cardAspect(current) !== previousAspect) queueGridLayout();
     }
     if (current) sampleTone(current, img);
   };
@@ -1105,35 +1211,44 @@ function buildModes() {
   slider.style.width = `${100 / MODES.length}%`;
   box.appendChild(slider);
 
-  const syncSlider = () => {
-    const idx = Math.max(0, MODES.findIndex(([v]) => v === S.style));
-    slider.style.transform = `translate3d(${idx * 100}%, 0, 0)`;
-  };
-
   for (const [value, labelKey, noteKey] of MODES) {
     const el = document.createElement('button');
     el.type = 'button';
-    el.className = 'mode' + (S.style === value ? ' is-active' : '');
-    el.setAttribute('aria-pressed', String(S.style === value));
+    el.className = 'mode';
     el.dataset.value = value;
     el.textContent = t(labelKey);
     el.addEventListener('click', () => {
-      S.style = value;
-      for (const m of box.querySelectorAll('.mode')) {
-        const active = m.dataset.value === value;
-        m.classList.toggle('is-active', active);
-        m.setAttribute('aria-pressed', String(active));
+      if (S.lockScreen) S.lockStyle = value;
+      else {
+        S.style = value;
+        api.setSettings({ style: value });
+        if (value === 'span') api.readStatus(true);
       }
-      syncSlider();
+      paintModeSelection();
       paintPreview();
       paintSide();
-      if (value === 'span') api.readStatus(true);
       toast(t(noteKey));
-      api.setSettings({ style: value });
     });
     box.appendChild(el);
   }
-  syncSlider();
+  paintModeSelection();
+}
+
+function previewStyle() {
+  if (!S.lockScreen) return S.style;
+  return S.lockStyle || (S.style === 'span' ? 'fill' : S.style);
+}
+
+function paintModeSelection() {
+  const style = previewStyle();
+  const index = Math.max(0, MODES.findIndex(([value]) => value === style));
+  $('#mode-scale .mode-slider').style.transform = 'translate3d(' + (index * 100) + '%, 0, 0)';
+  for (const button of $('#mode-scale').querySelectorAll('.mode')) {
+    const selected = button.dataset.value === style;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+    button.disabled = S.lockScreen && button.dataset.value === 'span';
+  }
 }
 
 function previewMonitors() {
@@ -1141,7 +1256,7 @@ function previewMonitors() {
 }
 
 function previewMonitorId() {
-  return S.style === 'span' ? null : S.monitorId;
+  return S.lockScreen || S.style === 'span' ? null : S.monitorId;
 }
 
 function readFraming(id) {
@@ -1330,21 +1445,23 @@ function paintPreview() {
   };
   const primary = monitors.find(m => m.x === 0 && m.y === 0) || monitors[0] || fallback;
   const id = previewMonitorId();
-  const span = S.style === 'span';
-  const tile = S.style === 'tile';
+  const style = previewStyle();
+  const span = style === 'span';
+  const tile = style === 'tile';
   const targets = span && monitors.length
     ? monitors
     : [monitors.find(m => m.id === id) || primary];
   const bounds = monitorBounds(targets);
   const viewport = framingViewport(bounds, previewW, previewH);
   const { scale } = viewport;
-  const placement = imagePlacement(image, bounds, S.style, DEFAULT_FRAMING);
+  const placement = imagePlacement(image, bounds, style, DEFAULT_FRAMING);
   const imageWidth = placement.width * scale;
   const imageHeight = placement.height * scale;
   const imageX = (placement.x - viewport.x) * scale;
   const imageY = (placement.y - viewport.y) * scale;
   const layers = [];
   preview.classList.toggle('is-multi', targets.length > 1);
+  preview.classList.toggle('is-lock-screen', S.lockScreen);
   preview.replaceChildren(...targets.map((m, idx) => {
     const layer = document.createElement('div');
     const monX = (m.x - viewport.x) * scale;
@@ -1377,7 +1494,7 @@ function paintPreview() {
     const tag = document.createElement('span');
     tag.className = 'preview-monitor-tag';
     const ratioStr = formatAspectLabel(m.width, m.height);
-    const num = pad((Number.isFinite(m.index) ? m.index : idx) + 1, 2);
+    const num = S.lockScreen ? t('lockScreen') : pad((Number.isFinite(m.index) ? m.index : idx) + 1, 2);
     tag.textContent = `${num} · ${m.width}×${m.height}${ratioStr ? ' · ' + ratioStr : ''}`;
     layer.appendChild(tag);
 
@@ -1520,14 +1637,14 @@ function closeDetail() {
 }
 
 function paintSide() {
-  const lock = $('#btn-lock');
-  lock.textContent = `${t('lockScreen')} / ${S.syncLock ? t('on') : t('off')}`;
-  const count = previewMonitors().length;
-  const selected = previewMonitors().find(m => m.id === previewMonitorId());
-  const m = $('#btn-monitor');
-  m.textContent = count < 2 ? `${t('monitor')} / ${t('oneDisplay')}`
-    : `${t('monitor')} / ${selected ? pad(selected.index + 1, 2) : t('allDisplays')}`;
-  $('#btn-undo-wallpaper').hidden = !S.undoAvailable;
+  const monitors = previewMonitors();
+  const selected = monitors.find(m => m.id === previewMonitorId());
+  let target;
+  if (S.lockScreen) target = t('lockScreen');
+  else if (monitors.length < 2) target = t('oneDisplay');
+  else target = selected ? pad(selected.index + 1, 2) : t('allDisplays');
+  $('#btn-monitor').textContent = t('monitor') + ' / ' + target;
+  $('#btn-undo-wallpaper').hidden = S.lockScreen || !S.undoAvailable;
 }
 
 function stepDetail(dir) {
@@ -1631,7 +1748,7 @@ function bindPreviewControls() {
 /* ---------------- apply / export / mode ---------------- */
 function setApplyRetry(retry) {
   const label = $('#apply-label');
-  label.dataset.i18n = retry ? 'retryApply' : 'apply';
+  label.dataset.i18n = retry ? 'retryApply' : S.lockScreen ? 'applyLockScreen' : 'apply';
   label.textContent = t(label.dataset.i18n);
 }
 async function applyCurrent() {
@@ -1643,14 +1760,14 @@ async function applyCurrent() {
   button.classList.add('is-busy');
   button.disabled = true;
   $('#receipt').title = '';
-  $('#receipt').textContent = t('readDisplay');
+  $('#receipt').textContent = t(S.lockScreen ? 'preparingWallpaper' : 'readDisplay');
   let r;
   try {
     const topology = previewMonitors().map(({ id, x, y, width, height }) => ({ id, x, y, width, height }));
     const viewport = { width: previewLayout?.width || stageW, height: previewLayout?.height || stageH };
     r = await api.apply({
-      item: S.current, style: S.style, monitorId: previewMonitorId(),
-      topology: topology.length ? topology : null, syncLock: S.syncLock, framing: S.framing, viewport
+      item: S.current, style: previewStyle(), monitorId: previewMonitorId(), lockScreen: S.lockScreen,
+      topology: topology.length ? topology : null, framing: S.framing, viewport
     });
   }
   catch (e) { r = { ok: false, error: String(e.message || e) }; }
@@ -1664,7 +1781,7 @@ async function applyCurrent() {
     receipt.title = r.error || '';
     const message = { IMAGE_NETWORK: 'imageNetworkError', IMAGE_SOURCE: 'imageRejected',
       IMAGE_MISSING: 'imageMissing', IMAGE_DECODE: 'imageDecode', DESKTOP_CHANGED: 'desktopChanged' }[r.code]
-      || { download: 'imageNetworkError', prepare: 'imageDecode', compose: 'composeFailed', write: 'writeFailed' }[r.stage]
+      || { download: 'imageNetworkError', prepare: 'imageDecode', compose: 'composeFailed', write: 'writeFailed', lock: 'lockFailed' }[r.stage]
       || 'displayFailed';
     receipt.textContent = t(message);
     setApplyRetry(true);
@@ -1672,15 +1789,15 @@ async function applyCurrent() {
     return;
   }
   setApplyRetry(false);
-  receipt.title = r.lock?.error || '';
-  receipt.textContent = r.lock && !r.lock.ok ? t('lockFailed') :
+  receipt.title = '';
+  receipt.textContent = r.lockScreen ? t('lockApplied') :
     t('okLabel') + ' / ' + r.style.toUpperCase() + ' / ' + t('display') + ' ' + r.targetCount;
   const detail = $('#detail');
   detail.classList.remove('is-applied');
   void detail.offsetWidth;
   detail.classList.add('is-applied');
   setTimeout(() => detail.classList.remove('is-applied'), 500);
-  toast(t('applied'));
+  toast(t(r.lockScreen ? 'lockApplied' : 'applied'));
 }
 
 async function desktopAction(action, success, selector) {
@@ -1830,11 +1947,10 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('is-on'), 2400);
 }
-function updateCatalog(data, append = false) {
+function updateCatalog(data, { preserveOrder = false } = {}) {
   S.items = (data.items || []).map(item => {
     const previous = indexedItems.get(item.id);
     if (!previous || thumbOf(previous) !== thumbOf(item)) return item;
-    if (append) return previous;
     if (previous.thumbWidth) {
       item.thumbWidth = previous.thumbWidth;
       item.thumbHeight = previous.thumbHeight;
@@ -1845,8 +1961,8 @@ function updateCatalog(data, append = false) {
   });
   S.sources = data.sources || [];
   indexCatalog();
-  renderSearch(append || $('#grid').scrollTop > 0, true);
-  if (suggestionsOpen()) updateSuggestions();
+  renderSearch(preserveOrder || $('#grid').scrollTop > 0, true);
+  refreshSuggestions();
 }
 
 async function refresh() {
@@ -1868,7 +1984,7 @@ async function refresh() {
       else if (filteredWallhaven()) {
         const request = onlineRequest;
         try {
-          const result = await api.wallhavenMore('', 1, S.genre, onlineFilters());
+          const result = await api.wallhavenMore('', 1, S.genre, onlineFilters(), true);
           if (request === onlineRequest) mergeOnlinePage(result, true, true);
         } catch (error) {
           if (request !== onlineRequest) return;
@@ -1895,11 +2011,24 @@ function onlineFilters() {
 function mergeOnlinePage(result, preserveOrder = true, refreshFirst = false) {
   if (!refreshFirst || wallhavenNextSearchPage === undefined) wallhavenNextSearchPage = result.nextPage;
   for (const item of result.items) onlineItems.set(item.id, item);
+  const key = wallhavenBrowseKey();
+  if (key) {
+    wallhavenBrowseFeeds.delete(key);
+    wallhavenBrowseFeeds.set(key, { items: onlineItems, nextPage: wallhavenNextSearchPage });
+    if (wallhavenBrowseFeeds.size > 16) wallhavenBrowseFeeds.delete(wallhavenBrowseFeeds.keys().next().value);
+  }
   renderSearch(preserveOrder, true);
+  refreshSuggestions();
+}
+
+function wallhavenBrowseKey(includeSearch = false) {
+  if (S.scope !== 'all' || S.aiResults || S.resolution === 'unknown' ||
+      (!includeSearch && wallpaperSearch.normalize(S.query)) || !filteredWallhaven()) return null;
+  return JSON.stringify([S.genre, S.ratio, S.resolution, S.sort]);
 }
 
 function wallhavenMorePage() {
-  if (S.scope !== 'all' || S.resolution === 'unknown') return null;
+  if (S.scope !== 'all' || S.aiResults || S.resolution === 'unknown') return null;
   if (wallpaperSearch.normalize(S.query)) return wallhavenNextSearchPage;
   const feed = S.sources.find(entry => entry.id === 'wallhaven');
   if (!feed) return null;
@@ -1908,8 +2037,16 @@ function wallhavenMorePage() {
 }
 
 function loadGenreFeed() {
-  if (filteredWallhaven() && !wallpaperSearch.normalize(S.query) && wallhavenNextSearchPage === undefined &&
-      wallhavenMorePage() === 1) loadMoreWallhaven();
+  const key = wallhavenBrowseKey();
+  if (!key || wallhavenNextSearchPage !== undefined || wallhavenMorePage() !== 1) return;
+  const previous = wallhavenBrowseFeeds.get(key);
+  if (previous) {
+    onlineItems = previous.items;
+    wallhavenNextSearchPage = previous.nextPage;
+    renderSearch(false, true);
+  } else {
+    loadMoreWallhaven();
+  }
 }
 
 function paintWallhavenMore() {
@@ -1942,16 +2079,17 @@ async function loadMoreWallhaven(automatic = false) {
   paintWallhavenMore();
   try {
     const result = await api.wallhavenMore(query, page, genre, onlineFilters());
-    if (!supplemental) updateCatalog(result, true);
+    if (!supplemental) updateWallhavenIndex(result);
     else if (request === onlineRequest) mergeOnlinePage(result, Boolean(query) || page > 1);
     if (request === onlineRequest) {
       autoLoadFailures = 0;
     }
-  } catch {
+  } catch (error) {
     if (request === onlineRequest) {
       autoLoadFailures++;
-      wallhavenAutoAfter = Date.now() + (autoLoadFailures === 1 ? 6000 : 15000);
-      if (autoLoadFailures >= MAX_AUTO_FAILURES) toast(t('loadingPaused'));
+      const backoff = /HTTP 429\b/.test(error.message) ? 60000 : Math.min(60000, 6000 * 2 ** (autoLoadFailures - 1));
+      wallhavenAutoAfter = Date.now() + backoff;
+      if (autoLoadFailures === MAX_AUTO_FAILURES) toast(t('loadingPaused'));
     }
   } finally {
     loadingMore = false;
@@ -1970,12 +2108,7 @@ function queueWallhavenAutoLoad() {
 }
 
 function canPrefetchWallhaven() {
-  if (loadingMore || refreshing || composingSearch || !wallhavenMorePage() ||
-      autoLoadFailures >= MAX_AUTO_FAILURES ||
-      $('#detail').classList.contains('is-open') || $('#settings').classList.contains('is-open')) return false;
-  const grid = $('#grid');
-  return grid.clientHeight > 0 &&
-    grid.scrollHeight - grid.scrollTop - grid.clientHeight <= grid.clientHeight * GRID_PREFETCH_SCREENS;
+  return !loadingMore && !refreshing && !composingSearch && Boolean(wallhavenMorePage());
 }
 
 function resetOnlineSearch() {
@@ -1984,7 +2117,7 @@ function resetOnlineSearch() {
   autoLoadFailures = 0;
   onlineRequest++;
   onlineSearchKey = '';
-  onlineItems.clear();
+  onlineItems = new Map();
   wallhavenNextSearchPage = undefined;
 }
 
@@ -2188,19 +2321,23 @@ function bind() {
     if (S.current && S.current.pageUrl) api.openExternal(S.current.pageUrl);
     else toast(t('noSourceLink'));
   });
-  $('#btn-lock').addEventListener('click', () => {
-    S.syncLock = !S.syncLock;
-    api.setSettings({ lockScreenSync: S.syncLock });
-    paintSide(); toast(S.syncLock ? t('lockOn') : t('lockOff'));
-  });
   $('#btn-monitor').addEventListener('click', () => {
-    const monitors = previewMonitors();
-    if (monitors.length < 2) { toast(t('oneDisplayToast')); return; }
-    if (S.style === 'span') { toast(t('noteSpan')); return; }
-    const next = monitors[monitors.findIndex(m => m.id === S.monitorId) + 1];
-    S.monitorId = next?.id || null;
+    if (S.busy) return;
+    if (S.lockScreen) {
+      S.lockScreen = false;
+      if (S.style !== 'span') S.monitorId = null;
+    } else {
+      const monitors = previewMonitors();
+      const position = monitors.findIndex(m => m.id === S.monitorId);
+      const next = monitors.length > 1 && S.style !== 'span' ? monitors[position + 1] : null;
+      if (next) S.monitorId = next.id;
+      else S.lockScreen = true;
+    }
+    paintModeSelection();
     paintPreview();
-    paintSide(); toast(next ? `${t('display')} ${pad(next.index + 1, 2)}` : t('allDisplaysToast'));
+    paintSide();
+    setApplyRetry(false);
+    $('#receipt').textContent = $('#receipt').title = '';
   });
   document.querySelectorAll('.ai-provider-word').forEach(w =>
     w.addEventListener('click', () => {
@@ -2372,27 +2509,18 @@ function bindApiEvents() {
     const key = { download: 'downloadingWallpaper', prepare: 'preparingWallpaper', compose: 'composeWallpaper', write: 'applying', lock: 'applyLock' }[stage];
     if (S.busy && key) $('#receipt').textContent = t(key);
   });
-  api.on('wallhaven:updated', ({ added, status, replace }) => {
-    if (replace) {
-      updateCatalog({ items: added.concat(S.items.filter(item => item.source !== 'wallhaven')),
-        sources: S.sources.map(source => source.id === status.id ? status : source) });
-      return;
-    }
-    S.sources = S.sources.map(source => source.id === status.id ? status : source);
-    const fresh = added.filter(item => !indexedItems.has(item.id));
-    for (const item of fresh) indexedItems.set(item.id, item);
-    S.items = S.items.concat(fresh);
-    renderSearch(true);
-  });
+  api.on('wallhaven:updated', updateWallhavenIndex);
   api.on('bootstrap:ready', d => {
     if (d.settings) S.settings = Object.assign({}, S.settings, d.settings);
-    if (d.background) setPaper(d.background);
-    if (!d.loading) updateCatalog(d);
+    if (!d.loading) updateCatalog(d, { preserveOrder: true });
   });
   api.on('wallpaper:changed', p => {
     S.undoAvailable = Boolean(p.undoAvailable);
     paintSide();
-    if ('background' in p) setPaper(p.background);
+    if ('background' in p) {
+      paperRevision++;
+      setPaper(p.background);
+    }
     if (p.verification?.ok) { S.status = p.verification; paintEngineStatus(); }
     if (p.history) {
       S.history = p.history;
@@ -2427,6 +2555,22 @@ function bindApiEvents() {
     toast(p.favorited ? t('savedToast') : t('removed'));
   });
   api.on('sources:updated', refresh);
+}
+
+function updateWallhavenIndex({ added, status, replace }) {
+  if (!status) return;
+  const sources = S.sources.map(source => source.id === status.id ? status : source);
+  if (replace) {
+    updateCatalog({ items: added.concat(S.items.filter(item => item.source !== 'wallhaven')), sources },
+      { preserveOrder: true });
+    return;
+  }
+  S.sources = sources;
+  const fresh = added.filter(item => !indexedItems.has(item.id));
+  for (const item of fresh) indexedItems.set(item.id, item);
+  S.items = S.items.concat(fresh);
+  renderSearch(true);
+  if (fresh.length) refreshSuggestions();
 }
 
 /* Stage scaling must NEVER wait on the network bootstrap. */

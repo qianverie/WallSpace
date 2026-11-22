@@ -141,7 +141,7 @@ async function bingCn() {
           title: im.title || '每日一图', author: author.trim(), description: copy,
           tags: [...new Set([...words, '每日', '风景', 'bing'])], tagsCn: ['每日', '风景'],
           width: 1920, height: 1080, ratio: '16:9', tone: toneFrom(words),
-          thumbUrl: BING + base + '_400x240.jpg',
+          thumbUrl: BING + base + '_640x360.jpg',
           fullUrl: BING + (im.url || base + '_1920x1080.jpg'),
           pageUrl: BING + (im.copyrightlink || '/'),
           license: 'Bing 每日壁纸 / 版权归原作者', date: im.startdate || ''
@@ -411,9 +411,11 @@ async function wallhavenPage({ query = '', page = 1, genre = 'all', useQueryGenr
   });
   if (!Array.isArray(response.data)) throw new Error('Unexpected Wallhaven response');
   const items = response.data.flatMap(image => {
+    const thumbnail = [image.thumbs?.original, image.thumbs?.small]
+      .find(url => /^https:\/\/th\.wallhaven\.cc\//.test(url || ''));
     if (image.purity !== 'sfw' || !/^[a-z0-9]+$/.test(image.id || '') ||
         !/^https:\/\/w\.wallhaven\.cc\/full\//.test(image.path || '') ||
-        !/^https:\/\/th\.wallhaven\.cc\//.test(image.thumbs?.small || '') ||
+        !thumbnail ||
         !(image.dimension_x >= 1920 && image.dimension_y >= 1080)) return [];
     if (theme?.categories === '010' && image.category !== 'anime') return [];
     if (theme?.categories === '001' && image.category !== 'people') return [];
@@ -434,7 +436,7 @@ async function wallhavenPage({ query = '', page = 1, genre = 'all', useQueryGenr
       stats: Object.fromEntries(['favorites', 'views'].filter(key => Number.isFinite(image[key]) && image[key] >= 0)
         .map(key => [key, image[key]])),
       width: image.dimension_x, height: image.dimension_y, ratio: imageRatio,
-      tone: toneFrom(tags, null), thumbUrl: image.thumbs.small, fullUrl: image.path,
+      tone: toneFrom(tags, null), thumbUrl: thumbnail, fullUrl: image.path,
       pageUrl: `https://wallhaven.cc/w/${image.id}`, license: 'Wallhaven / see source', date: image.created_at || ''
     }];
   });
@@ -578,4 +580,5 @@ async function searchOnline(credentials, query, selectedSource = 'all', genre = 
 
 // Exported so the anime index can be warmed once, serially, into the local
 // cache; concurrent cold requests are what trip the TLS reset.
-module.exports = { loadAll, loadCached, searchOnline, ratioOf, TAG_CN, animeGithub, commonsCollection, wallhavenPage, saveWallhavenIndex };
+module.exports = { loadAll, loadCached, searchOnline, ratioOf, TAG_CN, animeGithub, commonsCollection,
+  wallhavenPage, saveWallhavenIndex, wallhavenGenres: Object.keys(WALLHAVEN_GENRES) };

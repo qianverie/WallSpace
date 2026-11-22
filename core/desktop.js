@@ -29,6 +29,21 @@ function sameDesktop(a, b) {
     a.monitors.every(m => samePath(m.wallpaper, b.monitors.find(n => n.id === m.id)?.wallpaper));
 }
 
+function validateFraming(framing = DEFAULT_FRAMING) {
+  if (![framing.zoom, framing.x, framing.y].every(Number.isFinite) ||
+      framing.zoom < 0.25 || framing.zoom > 5 || Math.abs(framing.x) > 100 || Math.abs(framing.y) > 100) {
+    throw new Error('Invalid framing');
+  }
+  return framing;
+}
+
+function placementFor(image, bounds, style, framing, viewport) {
+  const usePreview = Number.isFinite(viewport?.width) && Number.isFinite(viewport?.height) &&
+    viewport.width > 0 && viewport.height > 0;
+  const frame = usePreview ? framingViewport(bounds, viewport.width, viewport.height) : framingViewport(bounds);
+  return imagePlacement(image, bounds, style, framing, frame);
+}
+
 function createDesktop({ directory, store, engine, decode, prepareImage }) {
   const images = path.join(directory, 'images');
   const managedImage = file => samePath(path.dirname(file), images);
@@ -104,11 +119,7 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
   async function apply(item, options) {
     const style = options.style;
     if (!WINDOWS_STYLES.includes(style)) throw new Error('Unknown wallpaper style');
-    const framing = options.framing || DEFAULT_FRAMING;
-    if (![framing.zoom, framing.x, framing.y].every(Number.isFinite) ||
-        framing.zoom < 0.25 || framing.zoom > 5 || Math.abs(framing.x) > 100 || Math.abs(framing.y) > 100) {
-      throw new Error('Invalid framing');
-    }
+    const framing = validateFraming(options.framing || DEFAULT_FRAMING);
     const before = await read();
     if (before.flags & 6) throw new Error('Windows slideshow or remote-session wallpaper is active');
     const selected = style === 'span' ? null : options.monitorId;
@@ -143,15 +154,9 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
       changes.push({ id: monitor.id, wallpaper: output });
     }
 
-    const customViewport = options.viewport && Number.isFinite(options.viewport.width) &&
-      Number.isFinite(options.viewport.height) && options.viewport.width > 0 && options.viewport.height > 0
-      ? options.viewport : null;
     for (const monitor of targets) {
       const bounds = span ? allBounds : monitor;
-      const viewport = customViewport
-        ? framingViewport(bounds, customViewport.width, customViewport.height)
-        : framingViewport(bounds);
-      await add(monitor, source, imagePlacement(image, bounds, style, framing, viewport), 0);
+      await add(monitor, source, placementFor(image, bounds, style, framing, options.viewport), 0);
     }
     if (selected && normalizePosition) {
       for (const monitor of before.monitors.filter(m => m.id !== selected)) {
@@ -175,6 +180,34 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
     options.progress?.('write');
     const result = await change(before, position, changes);
     return { ...result, source, targetCount: targets.length };
+  }
+
+  async function applyLockScreen(item, options) {
+    const { width, height } = options;
+    const style = options.style === 'span' ? 'fill' : options.style;
+    if (!WINDOWS_STYLES.includes(style)) throw new Error('Unknown wallpaper style');
+    const framing = validateFraming(options.framing || DEFAULT_FRAMING);
+    const image = await prepareImage(item, options.progress);
+    options.progress?.('compose');
+    const placement = placementFor(image, { x: 0, y: 0, width, height }, style, framing, options.viewport);
+    await fs.promises.mkdir(images, { recursive: true });
+    const output = path.join(images, 'lock-' + randomUUID() + '.png');
+    const job = {
+      source: image.source, output, width, height, color: 0,
+      x: placement.x, y: placement.y, imageWidth: placement.width, imageHeight: placement.height, tile: placement.tile
+    };
+    let applied = false;
+    try {
+      const composed = await runPlan('compose', { jobs: [job] });
+      if (!composed.ok) return composed;
+      options.progress?.('lock');
+      const result = await engine.run('lock', { image: output });
+      applied = result.ok;
+      if (applied) store.setSettings({ lastLockWallpaperPath: output });
+      return { ...result, lockScreen: true };
+    } finally {
+      if (!applied) await fs.promises.rm(output, { force: true });
+    }
   }
 
   async function undo() {
@@ -234,6 +267,7 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
     };
     collect(activeDesktop);
     keep(store.state.settings.lastWallpaperPath);
+    keep(store.state.settings.lastLockWallpaperPath);
     for (const item of store.state.favorites) keep(item.localPath);
     const undoState = store.state.desktop.undo;
     if (undoState) {
@@ -280,7 +314,7 @@ function createDesktop({ directory, store, engine, decode, prepareImage }) {
     return { bytes, count };
   }
 
-  return { read, apply, undo, saveProfile, restoreProfile, resolveWallpaper: originalOrBackup, pinnedFiles, pruneImages, reclaimableImageStats };
+  return { read, apply, applyLockScreen, undo, saveProfile, restoreProfile, resolveWallpaper: originalOrBackup, pinnedFiles, pruneImages, reclaimableImageStats };
 }
 
 module.exports = { createDesktop, topologyKey, matchDisplayLayout };

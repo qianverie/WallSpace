@@ -219,6 +219,24 @@ public static class DesktopMonitors {
     return ([IO.File]::ReadAllText($file) | ConvertFrom-Json)
   }
 
+  function Wait-WinRt($operation, [type]$resultType) {
+    Add-Type -AssemblyName System.Runtime.WindowsRuntime
+    if (-not $script:winRtTaskMethods) {
+      $script:winRtTaskMethods = @([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {
+        $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1
+      })
+    }
+    if ($resultType) {
+      $method = $script:winRtTaskMethods | Where-Object { $_.IsGenericMethodDefinition } | Select-Object -First 1
+      $task = $method.MakeGenericMethod($resultType).Invoke($null, @($operation))
+    } else {
+      $method = $script:winRtTaskMethods | Where-Object { -not $_.IsGenericMethodDefinition } | Select-Object -First 1
+      $task = $method.Invoke($null, @($operation))
+    }
+    if (-not $task.Wait(12000)) { throw 'The Windows lock screen API timed out' }
+    if ($resultType) { return $task.Result }
+  }
+
   function Invoke-Action([string]$Act, [string]$Img, [string]$Plan) {
     try {
       switch ($Act) {
@@ -299,14 +317,14 @@ public static class DesktopMonitors {
           return @{ ok = $true; action = 'monitors'; monitors = (Get-Monitors) }
         }
         'probe' {
-          # Read-only capability check: can this session load the WinRT lock-screen APIs?
-          # Nothing is written to the system here.
           $res = @{ ok = $false; action = 'probe'; engine = 'winrt'; winrt = $false; error = $null }
           try {
             [void][Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
             [void][Windows.System.UserProfile.LockScreen,Windows.System.UserProfile,ContentType=WindowsRuntime]
+            $personalization = [Windows.System.UserProfile.UserProfilePersonalizationSettings,Windows.System.UserProfile,ContentType=WindowsRuntime]
             $res.winrt = $true
-            $res.ok = $true
+            $res.ok = $personalization::IsSupported()
+            if (-not $res.ok) { $res.error = 'Windows personalization is unavailable' }
           } catch {
             $res.error = "$($_.Exception.Message)"
           }
@@ -318,23 +336,16 @@ public static class DesktopMonitors {
           }
           $full = (Resolve-Path -LiteralPath $Img).Path
           try {
-            [void][Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
+            $storage = [Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]
             [void][Windows.System.UserProfile.LockScreen,Windows.System.UserProfile,ContentType=WindowsRuntime]
-            function Wait-WinRt($op, $seconds = 8) {
-              $deadline = (Get-Date).AddSeconds($seconds)
-              while ($op.Status -eq 0 -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 80 }
-              if ($op.Status -ne 1) { throw "WinRT async status=$($op.Status)" }
-              return $op.GetResults()
-            }
-            $sfOp = [Windows.Storage.StorageFile]::GetFileFromPathAsync($full)
-            $sf = Wait-WinRt $sfOp
+            $sf = Wait-WinRt ($storage::GetFileFromPathAsync($full)) $storage
             $setOp = [Windows.System.UserProfile.LockScreen]::SetImageFileAsync($sf)
-            [void](Wait-WinRt $setOp)
+            Wait-WinRt $setOp
             return @{ ok = $true; action = 'lock'; engine = 'winrt'; image = $full; error = $null }
           } catch {
             return @{
               ok = $false; action = 'lock'; engine = 'winrt'; image = $full
-              error = "$($_.Exception.Message)"
+              error = "$($_.Exception.GetBaseException().Message)"
               hint = '锁屏个性化可能被组策略禁用，或当前会话不支持 WinRT'
             }
           }

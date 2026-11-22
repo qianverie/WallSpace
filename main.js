@@ -50,10 +50,11 @@ let win = null;
 let tray = null;
 let items = [];
 let sourcesState = [];
-let wallhavenWarmupTimer = null, wallhavenPending = null;
+let wallhavenPending = null, wallhavenSeedTimer = null, wallhavenSeedsStarted = false;
+const wallhavenFirstPages = new Map();
+const wallhavenFirstRequests = new Map();
+let wallhavenRetryAt = 0;
 let sourcesRevision = 0;
-const WALLHAVEN_WARM_TARGET = 360;
-const WALLHAVEN_WARM_MAX_PAGE = 18;
 let lastAppliedId = null;
 let applying = false;
 let displayTimer;
@@ -68,10 +69,13 @@ if (process.env.WS_MODE === 'window' || process.env.WS_MODE === 'immersive') {
 }
 
 /* ---------- current wallpaper as an in-memory data URL for the paper layer ---------- */
-function currentWallpaperDataUrl(preferred) {
+function wallpaperCandidates(preferred) {
   const transcoded = path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Themes', 'TranscodedWallpaper');
-  const candidates = [preferred, store.state.settings.lastWallpaperPath, transcoded].filter(Boolean);
-  for (const p of candidates) {
+  return [...new Set([preferred, store.state.settings.lastWallpaperPath, transcoded].filter(Boolean))];
+}
+
+function currentWallpaperDataUrl(preferred) {
+  for (const p of wallpaperCandidates(preferred)) {
     try {
       if (!fs.existsSync(p)) continue;
       let img = nativeImage.createFromPath(p);
@@ -84,6 +88,21 @@ function currentWallpaperDataUrl(preferred) {
       const w = img.getSize().width;
       return (w > 1400 ? img.resize({ width: 1400 }) : img).toDataURL();
     } catch (e) { /* try next candidate */ }
+  }
+  return null;
+}
+
+async function loadStartupPaper() {
+  for (const file of wallpaperCandidates()) {
+    try {
+      const size = { width: 1000, height: 1000 };
+      let thumbnail;
+      try { thumbnail = await nativeImage.createThumbnailFromPath(file, size); }
+      catch { thumbnail = nativeImage.createFromBuffer(await fs.promises.readFile(file)); }
+      if (thumbnail.isEmpty()) continue;
+      if (thumbnail.getSize().width > size.width) thumbnail = thumbnail.resize({ width: size.width });
+      return 'data:image/jpeg;base64,' + thumbnail.toJPEG(76).toString('base64');
+    } catch { /* Try the remaining wallpaper candidates. */ }
   }
   return null;
 }
@@ -462,21 +481,24 @@ async function applyItem(item, opts = {}) {
   let stage = 'display';
   const progress = next => { stage = next; opts.progress?.(next); };
   let result;
-  try { result = await desktop.apply(item, { ...opts, style, progress }); }
+  try {
+    if (opts.lockScreen === true) {
+      const { physicalWidth: width, physicalHeight: height } = primaryDisplayMetrics();
+      result = await desktop.applyLockScreen(item, { ...opts, style, progress, width, height });
+    } else {
+      result = await desktop.apply(item, { ...opts, style, progress });
+    }
+  }
   catch (error) { return { ok: false, stage, code: error.code, error: error.message }; }
   if (!result.ok) return { ...result, stage };
+  if (opts.lockScreen === true) return result;
   motion.stop(style === 'span' ? null : opts.monitorId);
-  let lock = null;
-  if (opts.syncLock) {
-    progress('lock');
-    lock = await wallpaper.run('lock', { image: result.source }).catch(error => ({ ok: false, error: error.message }));
-  }
 
   store.pushHistory(item);
   store.setSettings({ style, lastWallpaper: item.id });
   lastAppliedId = item.id;
   notifyDesktopChanged(result);
-  return { ok: true, item, style, lock, targetCount: result.targetCount };
+  return { ok: true, item, style, targetCount: result.targetCount };
 }
 
 async function runDesktopAction(action) {
@@ -550,14 +572,12 @@ async function loadSources() {
         ? sourcesState.map(source => source.id === 'wallhaven' ? status : source)
         : sourcesState.concat(status);
       if (win && !win.isDestroyed()) win.webContents.send('wallhaven:updated', { added: fresh, status, replace: true });
-      scheduleWallhavenWarmup();
     }
   });
   if (revision !== sourcesRevision) return { items, sources: sourcesState };
   const current = wallhavenSource();
   items = withWallhavenItems(r.items, items.filter(item => item.source === 'wallhaven'));
   sourcesState = r.sources.map(source => source.id === 'wallhaven' ? current : source);
-  scheduleWallhavenWarmup();
   return { items, sources: sourcesState };
 }
 
@@ -570,9 +590,18 @@ function wallhavenSource() {
   return sourcesState.find(entry => entry.id === 'wallhaven');
 }
 
+async function requestWallhaven(options) {
+  if (Date.now() < wallhavenRetryAt) throw new Error('HTTP 429 from wallhaven.cc');
+  try { return await providers.wallhavenPage(options); }
+  catch (error) {
+    if (/HTTP 429\b/.test(error.message)) wallhavenRetryAt = Date.now() + 60000;
+    throw error;
+  }
+}
+
 function appendWallhavenPage(source) {
   if (wallhavenPending?.source === source) return wallhavenPending.promise;
-  const promise = providers.wallhavenPage({ page: source.nextPage }).then(result => {
+  const promise = requestWallhaven({ page: source.nextPage }).then(result => {
     if (!sourcesState.includes(source)) return null;
     const ids = new Set(items.map(item => item.id));
     const added = result.items.filter(item => !ids.has(item.id) && ids.add(item.id));
@@ -587,24 +616,47 @@ function appendWallhavenPage(source) {
   return promise;
 }
 
-function scheduleWallhavenWarmup(attempt = 0, delay = 1800) {
-  const source = wallhavenSource();
-  if (wallhavenWarmupTimer || !source?.ok || !source.nextPage ||
-      source.count >= WALLHAVEN_WARM_TARGET || source.nextPage > WALLHAVEN_WARM_MAX_PAGE) return;
-  wallhavenWarmupTimer = setTimeout(async () => {
-    wallhavenWarmupTimer = null;
-    if (app.isQuitting) return;
-    if (wallhavenSource() !== source) { scheduleWallhavenWarmup(); return; }
-    try {
-      const update = await appendWallhavenPage(source);
-      if (update && win && !win.isDestroyed()) win.webContents.send('wallhaven:updated', update);
-      scheduleWallhavenWarmup();
-    } catch (error) {
-      if (attempt < 2 && (error.code === 'ECONNRESET' || /^timeout|^HTTP 5/.test(error.message))) {
-        scheduleWallhavenWarmup(attempt + 1, (attempt + 1) * 6000);
-      } else console.log('[wallhaven] background paging paused: ' + (error.message || error));
-    }
-  }, delay);
+function browseWallhaven(options, reuseFirstPage = true) {
+  if (options.page !== 1 || options.query) return requestWallhaven(options);
+  const key = JSON.stringify([options.genre || 'all', options.ratio || 'any', options.resolution || 'any',
+    options.sort === 'popular' ? 'popular' : 'newest']);
+  const cached = wallhavenFirstPages.get(key);
+  if (reuseFirstPage && cached && Date.now() - cached.at < 5 * 60 * 1000) return Promise.resolve(cached.result);
+  if (wallhavenFirstRequests.has(key)) return wallhavenFirstRequests.get(key);
+  const pending = requestWallhaven(options).then(result => {
+    if (wallhavenFirstPages.size >= 48) wallhavenFirstPages.clear();
+    wallhavenFirstPages.set(key, { at: Date.now(), result });
+    return result;
+  }).finally(() => wallhavenFirstRequests.delete(key));
+  wallhavenFirstRequests.set(key, pending);
+  return pending;
+}
+
+function seedWallhavenGenres() {
+  if (wallhavenSeedsStarted) return;
+  wallhavenSeedsStarted = true;
+  const { genre, ratio, resolution, sort } = store.state.settings;
+  const genres = [...providers.wallhavenGenres].sort((a, b) => Number(b === genre) - Number(a === genre));
+  const filters = { ratio, resolution: resolution === 'unknown' ? 'any' : resolution, sort };
+  const schedule = (delay) => {
+    if (app.isQuitting || !genres.length) return;
+    wallhavenSeedTimer = setTimeout(async () => {
+      wallhavenSeedTimer = null;
+      if (app.isQuitting) return;
+      const next = genres.shift();
+      let interval = 1300;
+      try { await browseWallhaven({ ...filters, genre: next, page: 1 }); }
+      catch (error) {
+        if (/HTTP 429\b/.test(error.message)) {
+          genres.unshift(next);
+          interval = 60000;
+        }
+      }
+      schedule(interval);
+    }, delay);
+    wallhavenSeedTimer.unref();
+  };
+  schedule(900);
 }
 
 function publicCredentials() {
@@ -642,7 +694,6 @@ function bootstrapPayload() {
     credentials: publicCredentials(),
     folders: store.state.customFolders,
     undoAvailable: Boolean(store.state.desktop.undo),
-    background: currentWallpaperDataUrl(),
     runtime: { electron: process.versions.electron || 'unknown', node: process.versions.node }
   };
 }
@@ -654,41 +705,33 @@ ipcMain.handle('app:bootstrap', async () => {
   const cached = providers.loadCached(DATA, store.state.credentials, store.state.customFolders);
   items = cached.items;
   sourcesState = cached.sources;
-  const payload = { ...bootstrapPayload(), status: displayStatus };
-  payload.loading = true;
-
-  (async () => {
-    const loaded = loadSources();
-    const push = extra => {
-      if (win && !win.isDestroyed()) win.webContents.send('bootstrap:ready', extra);
-    };
-    try {
-      await loaded;
-      push(bootstrapPayload());
-    } catch (e) {
-      console.log('[bootstrap] online refresh failed: ' + (e.message || e));
-      push(bootstrapPayload());
-    }
-  })();
-
-  return payload;
+  return { ...bootstrapPayload(), status: displayStatus, loading: true };
 });
+
+ipcMain.on('sources:start', ({ sender }) => {
+  seedWallhavenGenres();
+  loadSources().catch(error => {
+    console.log('[bootstrap] online refresh failed: ' + (error.message || error));
+  }).finally(() => {
+    if (!sender.isDestroyed()) sender.send('bootstrap:ready', bootstrapPayload());
+  });
+});
+ipcMain.handle('wallpaper:startupPaper', () => loadStartupPaper());
 
 ipcMain.handle('sources:refresh', () => loadSources());
 ipcMain.handle('sources:search', (_e, { query, genre, filters } = {}) =>
   providers.searchOnline(store.state.credentials, query, 'all', genre, filters));
 
-ipcMain.handle('sources:wallhavenMore', async (_e, { query, page, genre, filters } = {}) => {
+ipcMain.handle('sources:wallhavenMore', async (_e, { query, page, genre, filters, refresh } = {}) => {
   const term = typeof query === 'string' ? query.trim().slice(0, 120) : '';
   if (term || (genre && genre !== 'all') || (filters?.ratio && filters.ratio !== 'any') ||
       (filters?.resolution && filters.resolution !== 'any')) {
-    return providers.wallhavenPage({ ...filters, query: term, page, genre });
+    return browseWallhaven({ ...filters, query: term, page, genre }, refresh !== true);
   }
   const source = wallhavenSource();
-  if (!source?.nextPage || source.nextPage !== page) return { items, sources: sourcesState };
-  await appendWallhavenPage(source);
-  scheduleWallhavenWarmup();
-  return { items, sources: sourcesState };
+  if (!source?.nextPage || source.nextPage !== page) return { added: [], status: source };
+  const update = await appendWallhavenPage(source);
+  return update || { added: [], status: wallhavenSource() };
 });
 
 ipcMain.handle('item:apply', async (event, payload) => {
@@ -1075,6 +1118,7 @@ if (!gotLock) {
 }
 
 app.on('before-quit', () => {
+  clearTimeout(wallhavenSeedTimer);
   for (const job of aiJobs.values()) job.controller.abort();
   clearTimeout(cacheGcStartupTimer);
   clearInterval(cacheGcInterval);

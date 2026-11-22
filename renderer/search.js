@@ -58,9 +58,13 @@ const wallpaperSearch = (() => {
       if (!existing || existing.weight < weight) words.set(word, { label: String(label).trim(), weight });
     };
     for (const tag of tags) add(tag, 4);
-    add(item.title, 3);
-    for (const part of segmenter.segment(item.title || '')) if (part.isWordLike) add(part.segment, 2);
-    add(item.author, 1);
+    const generatedTitle = item.source === 'wallhaven' && normalize(item.title) ===
+      normalize(`wallhaven ${String(item.id).split(':').at(-1)}`);
+    if (!generatedTitle) {
+      add(item.title, 3);
+      for (const part of segmenter.segment(item.title || '')) if (part.isWordLike) add(part.segment, 2);
+    }
+    if (normalize(item.author) !== `${item.source} community`) add(item.author, 1);
     const themeText = normalize([item.title, ...tags, item.source === 'local' ? '' : item.description].join(' '));
     const entry = { text: normalize([item.title, item.author, item.description, item.source, item.sourceLabel, ...tags].join(' ')),
       words, genres: genreScores(item, tags.map(normalize), themeText), date: String(item.date || '').replace(/\D/g, '') };
@@ -74,11 +78,14 @@ const wallpaperSearch = (() => {
     const cached = nameCache.get(item);
     if (cached?.name === name) return cached.entry;
     const words = new Map(base.words);
-    words.set(normalize(name), { label: name, weight: 6 });
+    const fullName = normalize(name);
+    words.set(fullName, { label: name, weight: 6 });
     for (const part of segmenter.segment(name)) {
-      if (part.isWordLike) words.set(normalize(part.segment), { label: part.segment, weight: 5 });
+      if (!part.isWordLike) continue;
+      const word = normalize(part.segment);
+      if (word !== fullName) words.set(word, { label: part.segment, weight: 5 });
     }
-    const entry = { ...base, text: base.text + ' ' + normalize(name), words };
+    const entry = { ...base, text: base.text + ' ' + fullName, words };
     nameCache.set(item, { name, entry });
     return entry;
   }
@@ -86,28 +93,40 @@ const wallpaperSearch = (() => {
   function suggest(items, value, recent = [], limit = 6, customName = () => '') {
     const query = normalize(value);
     if (!query) return recent.slice(0, limit);
-    const before = terms(value);
-    const fragment = /[^\p{L}\p{M}\p{N}]$/u.test(value) ? '' : before.pop();
+    const tail = value.match(/[\p{L}\p{M}\p{N}]+$/u)?.[0] || '';
+    const prefix = value.slice(0, value.length - tail.length).trimStart();
+    const before = terms(prefix);
+    const fragment = normalize(tail);
+    const phrasePrefix = fragment ? query : query + ' ';
     const scores = new Map();
+    const add = (key, result, rank, weight) => {
+      const score = scores.get(key);
+      if (!score) scores.set(key, { result, rank, weight, count: 1 });
+      else {
+        score.count++;
+        if (rank < score.rank || (rank === score.rank && weight > score.weight)) {
+          Object.assign(score, { result, rank, weight });
+        }
+      }
+    };
+    for (const label of recent) {
+      const word = normalize(label);
+      if (word !== query && word.startsWith(phrasePrefix)) add(word, label, 0, 5);
+    }
     for (const item of items) {
       const entry = indexWithName(item, customName(item));
       if (!matches(entry, before)) continue;
       for (const [word, candidate] of entry.words) {
-        const rank = word.startsWith(query) ? 0 : word.startsWith(fragment) ? 1 : word.includes(fragment) ? 2 : -1;
-        if (rank < 0) continue;
-        const result = rank === 0 ? candidate.label : [...before, candidate.label].join(' ');
-        const key = normalize(result);
-        if (key === query || before.includes(word) || !matches(entry, terms(result))) continue;
-        const score = scores.get(key);
-        if (score) {
-          score.rank = Math.min(score.rank, rank);
-          score.weight += candidate.weight;
-        } else {
-          scores.set(key, { result, rank, weight: candidate.weight });
-        }
+        if (word === query || before.includes(word)) continue;
+        if (word.startsWith(phrasePrefix)) add(word, candidate.label, 0, candidate.weight);
+        else if (before.length && word.startsWith(fragment)) add(before.join(' ') + ' ' + word,
+          prefix + candidate.label, 0, candidate.weight);
+        else if (fragment && word.includes(fragment)) add((before.length ? before.join(' ') + ' ' : '') + word,
+          prefix + candidate.label, 1, candidate.weight);
       }
     }
     return [...scores.values()].sort((left, right) => left.rank - right.rank || right.weight - left.weight ||
+      right.count - left.count ||
       left.result.localeCompare(right.result)).slice(0, limit).map(entry => entry.result);
   }
 
